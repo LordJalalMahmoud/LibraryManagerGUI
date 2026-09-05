@@ -222,6 +222,13 @@ package-native.bat
 ```
 *(Also automated via the `.github/workflows/native-package.yml` GitHub Actions workflow).*
 
+### 5. macOS Native Installer (.dmg / .pkg / .app)
+For macOS systems, run:
+```bash
+./package-native-macos.sh all    # Generates .dmg, .pkg, and LibraryManager.app
+```
+*(Also automated via GitHub Actions on `macos-latest` runners in `.github/workflows/native-package.yml`).*
+
 ---
 
 ## Cross-Platform Storage

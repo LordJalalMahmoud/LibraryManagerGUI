@@ -101,3 +101,37 @@ jobs:
           path: |
             target/dist/*.msi
             target/dist/*.zip
+
+  package-macos:
+    name: Package macOS (.dmg, .pkg & .app)
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Fat JAR
+        run: mvn --batch-mode --no-transfer-progress clean package -DskipTests=true
+
+      - name: Make packaging script executable
+        run: chmod +x package-native-macos.sh
+
+      - name: Build Native macOS Packages
+        run: ./package-native-macos.sh all
+
+      - name: Upload macOS Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: LibraryManager-macOS-Packages
+          path: |
+            target/dist/*.dmg
+            target/dist/*.pkg
+            target/dist/*.tar.gz
+
