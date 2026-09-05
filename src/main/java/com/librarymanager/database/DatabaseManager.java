@@ -98,7 +98,13 @@ public class DatabaseManager {
                 cover_image TEXT,
                 date_added TEXT NOT NULL,
                 date_started TEXT,
-                date_completed TEXT
+                date_completed TEXT,
+                category TEXT,
+                publisher TEXT,
+                isbn TEXT,
+                tags TEXT,
+                is_favorite INTEGER NOT NULL DEFAULT 0,
+                is_wishlist INTEGER NOT NULL DEFAULT 0
             );
             """;
 
@@ -128,6 +134,10 @@ public class DatabaseManager {
             CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
             CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
             CREATE INDEX IF NOT EXISTS idx_books_date_added ON books(date_added);
+            CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
+            CREATE INDEX IF NOT EXISTS idx_books_is_favorite ON books(is_favorite);
+            CREATE INDEX IF NOT EXISTS idx_books_is_wishlist ON books(is_wishlist);
+            CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
             CREATE INDEX IF NOT EXISTS idx_chapters_book_id ON chapters(book_id);
             """;
 
@@ -137,11 +147,31 @@ public class DatabaseManager {
             stmt.execute(createBooksTable);
             stmt.execute(createChaptersTable);
             stmt.execute(createSettingsTable);
+            migrateSchema(conn);
             stmt.execute(createIndexes);
             LOGGER.info("Database initialized successfully at: " + databasePath);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize SQLite database", e);
             throw new RuntimeException("Database initialization error", e);
+        }
+    }
+
+    private void migrateSchema(Connection conn) {
+        String[] alterStatements = {
+            "ALTER TABLE books ADD COLUMN category TEXT;",
+            "ALTER TABLE books ADD COLUMN publisher TEXT;",
+            "ALTER TABLE books ADD COLUMN isbn TEXT;",
+            "ALTER TABLE books ADD COLUMN tags TEXT;",
+            "ALTER TABLE books ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE books ADD COLUMN is_wishlist INTEGER NOT NULL DEFAULT 0;"
+        };
+
+        for (String sql : alterStatements) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(sql);
+            } catch (SQLException ignored) {
+                // Column already exists, safe to ignore
+            }
         }
     }
 

@@ -95,6 +95,44 @@ public class BookDetailsController {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        Button favBtn = new Button();
+        favBtn.getStyleClass().addAll("btn", "btn-secondary");
+        SVGPath favIcon = IconUtil.createIcon(IconUtil.IconType.HEART, 14);
+        if (book.isFavorite()) {
+            favIcon.setStyle("-fx-fill: #ef4444;");
+            favBtn.setText(I18n.get("book.favorite.remove_tooltip"));
+        } else {
+            favBtn.setText(I18n.get("book.favorite.tooltip"));
+        }
+        favBtn.setGraphic(favIcon);
+        favBtn.setOnAction(e -> {
+            boolean newFav = !book.isFavorite();
+            bookService.toggleFavorite(book.getId(), newFav);
+            book.setFavorite(newFav);
+            mainController.showToast(newFav ? I18n.get("toast.favorite_added", book.getTitle()) : I18n.get("toast.favorite_removed", book.getTitle()), ToastNotification.ToastType.SUCCESS);
+            refreshData();
+            mainController.refreshActiveViews();
+        });
+
+        Button wishBtn = new Button();
+        wishBtn.getStyleClass().addAll("btn", "btn-secondary");
+        SVGPath wishIcon = IconUtil.createIcon(IconUtil.IconType.STAR, 14);
+        if (book.isWishlist()) {
+            wishIcon.setStyle("-fx-fill: #eab308;");
+            wishBtn.setText(I18n.get("book.wishlist.remove_tooltip"));
+        } else {
+            wishBtn.setText(I18n.get("book.wishlist.tooltip"));
+        }
+        wishBtn.setGraphic(wishIcon);
+        wishBtn.setOnAction(e -> {
+            boolean newWish = !book.isWishlist();
+            bookService.toggleWishlist(book.getId(), newWish);
+            book.setWishlist(newWish);
+            mainController.showToast(newWish ? I18n.get("toast.wishlist_added", book.getTitle()) : I18n.get("toast.wishlist_removed", book.getTitle()), ToastNotification.ToastType.SUCCESS);
+            refreshData();
+            mainController.refreshActiveViews();
+        });
+
         Button editBtn = new Button(I18n.get("details.edit"));
         editBtn.getStyleClass().addAll("btn", "btn-secondary");
         editBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.EDIT, 14));
@@ -110,7 +148,7 @@ public class BookDetailsController {
         deleteBtn.setGraphicTextGap(8);
         deleteBtn.setOnAction(e -> handleDelete());
 
-        topBar.getChildren().addAll(backBtn, spacer, editBtn, deleteBtn);
+        topBar.getChildren().addAll(backBtn, spacer, favBtn, wishBtn, editBtn, deleteBtn);
         contentBox.getChildren().add(topBar);
 
         // 2. Main Detail Card
@@ -138,36 +176,92 @@ public class BookDetailsController {
         Label authorLabel = new Label(I18n.get("book.card.by", book.getAuthor()));
         authorLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; -fx-text-fill: -text-muted;");
 
-        // Status chip
+        // Status chip & Organization Badges Row
+        HBox badgeRow = new HBox(8);
+        badgeRow.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+
         statusBadge = new Label(book.getStatus().getDisplayName());
         statusBadge.getStyleClass().addAll("badge-chip", book.getStatus().getStyleClass());
+        badgeRow.getChildren().add(statusBadge);
 
-        titles.getChildren().addAll(statusBadge, titleLabel, authorLabel);
+        if (book.getCategory() != null && !book.getCategory().trim().isEmpty()) {
+            Label catBadge = new Label(book.getCategory().trim());
+            catBadge.setStyle("-fx-background-color: -surface-border; -fx-text-fill: -text-main; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            badgeRow.getChildren().add(catBadge);
+        }
+
+        if (book.isFavorite()) {
+            Label favBadge = new Label("❤️ " + I18n.get("book.favorite"));
+            favBadge.setStyle("-fx-background-color: rgba(239, 68, 68, 0.15); -fx-text-fill: #ef4444; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            badgeRow.getChildren().add(favBadge);
+        }
+
+        if (book.isWishlist()) {
+            Label wishBadge = new Label("🌟 " + I18n.get("book.wishlist"));
+            wishBadge.setStyle("-fx-background-color: rgba(234, 179, 8, 0.15); -fx-text-fill: #eab308; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            badgeRow.getChildren().add(wishBadge);
+        }
+
+        titles.getChildren().addAll(badgeRow, titleLabel, authorLabel);
 
         // Interactive Reading Experience Card
         VBox readingExperienceBox = buildReadingExperienceCard();
 
-        // Metadata grid (Dates, Parts, etc.)
+        // Metadata grid (Dates, Parts, Category, Publisher, ISBN)
         GridPane metaGrid = new GridPane();
         metaGrid.setHgap(24);
         metaGrid.setVgap(12);
         metaGrid.setPadding(new Insets(12, 0, 0, 0));
 
-        addMetaItem(metaGrid, 0, 0, I18n.get("details.total_pages"), String.valueOf(book.getTotalPages()));
-        addMetaItem(metaGrid, 1, 0, I18n.get("details.volumes"), String.valueOf(book.getTotalParts()));
-        addMetaItem(metaGrid, 0, 1, I18n.get("details.date_added"), DateUtil.format(book.getDateAdded()));
+        int metaRowIdx = 0;
+        addMetaItem(metaGrid, 0, metaRowIdx, I18n.get("details.total_pages"), String.valueOf(book.getTotalPages()));
+        addMetaItem(metaGrid, 1, metaRowIdx++, I18n.get("details.volumes"), String.valueOf(book.getTotalParts()));
+
+        boolean hasCat = book.getCategory() != null && !book.getCategory().trim().isEmpty();
+        boolean hasPub = book.getPublisher() != null && !book.getPublisher().trim().isEmpty();
+        if (hasCat || hasPub) {
+            if (hasCat) addMetaItem(metaGrid, 0, metaRowIdx, I18n.get("book.category"), book.getCategory());
+            if (hasPub) addMetaItem(metaGrid, 1, metaRowIdx, I18n.get("book.publisher"), book.getPublisher());
+            metaRowIdx++;
+        }
+
+        if (book.getIsbn() != null && !book.getIsbn().trim().isEmpty()) {
+            addMetaItem(metaGrid, 0, metaRowIdx++, I18n.get("book.isbn"), book.getIsbn());
+        }
+
+        addMetaItem(metaGrid, 0, metaRowIdx, I18n.get("details.date_added"), DateUtil.format(book.getDateAdded()));
 
         dateStartedVal = new Label(DateUtil.format(book.getDateStarted()));
         dateStartedVal.getStyleClass().add("stat-value");
         dateStartedVal.setStyle("-fx-font-size: 13px; -fx-font-weight: 600;");
         VBox startedBox = new VBox(2, new Label(I18n.get("details.date_started")) {{ getStyleClass().add("stat-subtext"); }}, dateStartedVal);
-        metaGrid.add(startedBox, 1, 1);
+        metaGrid.add(startedBox, 1, metaRowIdx++);
 
         dateCompletedVal = new Label(DateUtil.format(book.getDateCompleted()));
         dateCompletedVal.getStyleClass().add("stat-value");
         dateCompletedVal.setStyle("-fx-font-size: 13px; -fx-font-weight: 600;");
         VBox completedBox = new VBox(2, new Label(I18n.get("details.date_completed")) {{ getStyleClass().add("stat-subtext"); }}, dateCompletedVal);
-        metaGrid.add(completedBox, 0, 2);
+        metaGrid.add(completedBox, 0, metaRowIdx++);
+
+        // Tags Section
+        VBox tagsBox = null;
+        List<String> tags = book.getTagList();
+        if (!tags.isEmpty()) {
+            tagsBox = new VBox(6);
+            Label tagsHeader = new Label(I18n.get("book.tags"));
+            tagsHeader.getStyleClass().add("stat-title");
+            tagsHeader.setStyle("-fx-font-weight: 700; -fx-font-size: 13px;");
+
+            FlowPane tagsFlow = new FlowPane();
+            tagsFlow.setHgap(6);
+            tagsFlow.setVgap(6);
+            for (String tag : tags) {
+                Label chip = new Label("#" + tag);
+                chip.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 8px;");
+                tagsFlow.getChildren().add(chip);
+            }
+            tagsBox.getChildren().addAll(tagsHeader, tagsFlow);
+        }
 
         // Description / Notes
         VBox descBox = new VBox(6);
@@ -183,7 +277,12 @@ public class BookDetailsController {
         descContent.setWrapText(true);
         descBox.getChildren().addAll(descHeader, descContent);
 
-        rightCol.getChildren().addAll(titles, readingExperienceBox, metaGrid, descBox);
+        rightCol.getChildren().addAll(titles, readingExperienceBox, metaGrid);
+        if (tagsBox != null) {
+            rightCol.getChildren().add(tagsBox);
+        }
+        rightCol.getChildren().add(descBox);
+
         mainCard.getChildren().addAll(coverPane, rightCol);
         contentBox.getChildren().add(mainCard);
 
@@ -499,9 +598,8 @@ public class BookDetailsController {
     private void refreshData() {
         bookService.getBookById(book.getId()).ifPresent(updated -> {
             this.book = updated;
-            pageSpinner.getValueFactory().setValue(book.getCurrentPage());
-            updateProgressDisplay();
-            reloadChapters();
+            contentBox.getChildren().clear();
+            buildView();
         });
     }
 

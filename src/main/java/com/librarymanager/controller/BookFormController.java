@@ -18,6 +18,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +42,12 @@ public class BookFormController {
     private TextField totalPartsField;
     private TextField currentPageField;
     private ComboBox<ReadingStatus> statusComboBox;
+    private ComboBox<String> categoryComboBox;
+    private TextField publisherField;
+    private TextField isbnField;
+    private TextField tagsField;
+    private CheckBox favoriteCheckBox;
+    private CheckBox wishlistCheckBox;
     private TextField coverImageField;
     private TextArea descriptionArea;
 
@@ -50,6 +57,7 @@ public class BookFormController {
     private Label pagesError;
     private Label partsError;
     private Label currentError;
+    private Label isbnError;
 
     private Button saveButton;
 
@@ -169,7 +177,65 @@ public class BookFormController {
         progressRow.getChildren().addAll(currentGroup, statusGroup);
         form.getChildren().add(progressRow);
 
-        // 5. Cover Image Picker
+        // 5. Category & Publisher Row
+        HBox catPubRow = new HBox(16);
+        catPubRow.setFillHeight(true);
+
+        categoryComboBox = new ComboBox<>();
+        categoryComboBox.getStyleClass().add("combo-box");
+        categoryComboBox.setEditable(true);
+        categoryComboBox.setMaxWidth(Double.MAX_VALUE);
+        categoryComboBox.setPromptText(I18n.get("book.category.prompt"));
+        List<String> existingCats = bookService.getAllCategories();
+        categoryComboBox.getItems().addAll(existingCats);
+
+        VBox categoryGroup = createFieldGroup(I18n.get("book.category"), categoryComboBox, null);
+        HBox.setHgrow(categoryGroup, Priority.ALWAYS);
+
+        publisherField = new TextField();
+        publisherField.setPromptText(I18n.get("book.publisher.prompt"));
+        publisherField.getStyleClass().add("text-input");
+        VBox publisherGroup = createFieldGroup(I18n.get("book.publisher"), publisherField, null);
+        HBox.setHgrow(publisherGroup, Priority.ALWAYS);
+
+        catPubRow.getChildren().addAll(categoryGroup, publisherGroup);
+        form.getChildren().add(catPubRow);
+
+        // 6. ISBN & Tags Row
+        HBox isbnTagRow = new HBox(16);
+        isbnTagRow.setFillHeight(true);
+
+        isbnField = new TextField();
+        isbnField.setPromptText(I18n.get("book.isbn.prompt"));
+        isbnField.getStyleClass().add("text-input");
+        isbnError = createErrorLabel();
+        VBox isbnGroup = createFieldGroup(I18n.get("book.isbn"), isbnField, isbnError);
+        HBox.setHgrow(isbnGroup, Priority.ALWAYS);
+
+        tagsField = new TextField();
+        tagsField.setPromptText(I18n.get("book.tags.prompt"));
+        tagsField.getStyleClass().add("text-input");
+        VBox tagsGroup = createFieldGroup(I18n.get("book.tags"), tagsField, null);
+        HBox.setHgrow(tagsGroup, Priority.ALWAYS);
+
+        isbnTagRow.getChildren().addAll(isbnGroup, tagsGroup);
+        form.getChildren().add(isbnTagRow);
+
+        // 7. Favorites & Wishlist Flags Row
+        HBox flagsRow = new HBox(24);
+        flagsRow.setAlignment(Pos.CENTER_LEFT);
+        flagsRow.setPadding(new Insets(2, 0, 4, 0));
+
+        favoriteCheckBox = new CheckBox("❤️ " + I18n.get("book.favorite"));
+        favoriteCheckBox.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: -text-main;");
+
+        wishlistCheckBox = new CheckBox("🌟 " + I18n.get("book.wishlist"));
+        wishlistCheckBox.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: -text-main;");
+
+        flagsRow.getChildren().addAll(favoriteCheckBox, wishlistCheckBox);
+        form.getChildren().add(flagsRow);
+
+        // 8. Cover Image Picker
         HBox coverRow = new HBox(8);
         coverImageField = new TextField();
         coverImageField.setPromptText(I18n.get("form.cover.prompt"));
@@ -257,6 +323,22 @@ public class BookFormController {
         totalPartsField.setText(String.valueOf(bookToEdit.getTotalParts()));
         currentPageField.setText(String.valueOf(bookToEdit.getCurrentPage()));
         statusComboBox.setValue(bookToEdit.getStatus());
+
+        if (bookToEdit.getCategory() != null) {
+            categoryComboBox.setValue(bookToEdit.getCategory());
+        }
+        if (bookToEdit.getPublisher() != null) {
+            publisherField.setText(bookToEdit.getPublisher());
+        }
+        if (bookToEdit.getIsbn() != null) {
+            isbnField.setText(bookToEdit.getIsbn());
+        }
+        if (bookToEdit.getTags() != null) {
+            tagsField.setText(bookToEdit.getTags());
+        }
+        favoriteCheckBox.setSelected(bookToEdit.isFavorite());
+        wishlistCheckBox.setSelected(bookToEdit.isWishlist());
+
         if (bookToEdit.getCoverImage() != null) {
             coverImageField.setText(bookToEdit.getCoverImage());
         }
@@ -271,6 +353,20 @@ public class BookFormController {
         totalPagesField.textProperty().addListener((obs, o, n) -> validatePages());
         currentPageField.textProperty().addListener((obs, o, n) -> validateCurrentPage());
         totalPartsField.textProperty().addListener((obs, o, n) -> validateParts());
+        isbnField.textProperty().addListener((obs, o, n) -> validateIsbn());
+    }
+
+    private boolean validateIsbn() {
+        String val = isbnField.getText();
+        if (val != null && !val.trim().isEmpty() && val.trim().length() > 30) {
+            isbnError.setText("ISBN maximum 30 characters.");
+            isbnError.setVisible(true);
+            isbnError.setManaged(true);
+            return false;
+        }
+        isbnError.setVisible(false);
+        isbnError.setManaged(false);
+        return true;
     }
 
     private boolean validateTitle() {
@@ -370,7 +466,7 @@ public class BookFormController {
     }
 
     private void handleSave() {
-        boolean valid = validateTitle() & validateAuthor() & validatePages() & validateParts() & validateCurrentPage();
+        boolean valid = validateTitle() & validateAuthor() & validatePages() & validateParts() & validateCurrentPage() & validateIsbn();
         if (!valid) {
             return;
         }
@@ -382,6 +478,24 @@ public class BookFormController {
         target.setTotalParts(Integer.parseInt(totalPartsField.getText().trim()));
         target.setCurrentPage(Integer.parseInt(currentPageField.getText().trim()));
         target.setStatus(statusComboBox.getValue());
+
+        String catVal = categoryComboBox.getEditor() != null ? categoryComboBox.getEditor().getText() : null;
+        if (catVal == null || catVal.trim().isEmpty()) {
+            catVal = categoryComboBox.getValue();
+        }
+        target.setCategory(catVal != null && !catVal.trim().isEmpty() ? catVal.trim() : null);
+
+        String pubVal = publisherField.getText();
+        target.setPublisher(pubVal != null && !pubVal.trim().isEmpty() ? pubVal.trim() : null);
+
+        String isbnVal = isbnField.getText();
+        target.setIsbn(isbnVal != null && !isbnVal.trim().isEmpty() ? isbnVal.trim() : null);
+
+        String tagsVal = tagsField.getText();
+        target.setTags(tagsVal != null && !tagsVal.trim().isEmpty() ? tagsVal.trim() : null);
+
+        target.setFavorite(favoriteCheckBox.isSelected());
+        target.setWishlist(wishlistCheckBox.isSelected());
 
         String cover = coverImageField.getText();
         target.setCoverImage(cover != null && !cover.trim().isEmpty() ? cover.trim() : null);

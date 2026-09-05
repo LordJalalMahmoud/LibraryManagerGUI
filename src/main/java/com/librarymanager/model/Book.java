@@ -1,10 +1,14 @@
 package com.librarymanager.model;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
- * Represents a book in the personal library.
+ * Represents a book in the personal library with full organization metadata.
  */
 public class Book {
     private Long id;
@@ -21,6 +25,14 @@ public class Book {
     private String coverImage;
     private int completedChaptersCount;
     private int totalChaptersCount;
+
+    // Organization & Discovery Metadata
+    private String category;
+    private String publisher;
+    private String isbn;
+    private String tags;
+    private boolean favorite;
+    private boolean wishlist;
 
     public Book() {
         this.dateAdded = LocalDate.now();
@@ -159,6 +171,64 @@ public class Book {
     public double getChapterProgressPercentage() {
         if (totalChaptersCount <= 0) return 0.0;
         return ((double) completedChaptersCount / (double) totalChaptersCount) * 100.0;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category != null ? category.trim() : null;
+    }
+
+    public String getPublisher() {
+        return publisher;
+    }
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher != null ? publisher.trim() : null;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn != null ? isbn.trim() : null;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags != null ? tags.trim() : null;
+    }
+
+    public List<String> getTagList() {
+        if (tags == null || tags.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(tags.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
+    }
+
+    public boolean isWishlist() {
+        return wishlist;
+    }
+
+    public void setWishlist(boolean wishlist) {
+        this.wishlist = wishlist;
     }
 
     /**

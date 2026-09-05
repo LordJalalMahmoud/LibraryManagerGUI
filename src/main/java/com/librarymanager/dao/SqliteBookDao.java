@@ -34,8 +34,12 @@ public class SqliteBookDao implements BookDao {
     @Override
     public Book save(Book book) {
         String sql = """
-            INSERT INTO books (title, author, total_pages, total_parts, current_page, status, description, cover_image, date_added, date_started, date_completed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO books (
+                title, author, total_pages, total_parts, current_page, status,
+                description, cover_image, date_added, date_started, date_completed,
+                category, publisher, isbn, tags, is_favorite, is_wishlist
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """;
 
         try (Connection conn = databaseManager.getConnection();
@@ -52,6 +56,12 @@ public class SqliteBookDao implements BookDao {
             stmt.setString(9, book.getDateAdded() != null ? book.getDateAdded().format(DATE_FORMATTER) : LocalDate.now().format(DATE_FORMATTER));
             stmt.setString(10, book.getDateStarted() != null ? book.getDateStarted().format(DATE_FORMATTER) : null);
             stmt.setString(11, book.getDateCompleted() != null ? book.getDateCompleted().format(DATE_FORMATTER) : null);
+            stmt.setString(12, book.getCategory());
+            stmt.setString(13, book.getPublisher());
+            stmt.setString(14, book.getIsbn());
+            stmt.setString(15, book.getTags());
+            stmt.setInt(16, book.isFavorite() ? 1 : 0);
+            stmt.setInt(17, book.isWishlist() ? 1 : 0);
 
             int affected = stmt.executeUpdate();
             if (affected > 0) {
@@ -77,7 +87,8 @@ public class SqliteBookDao implements BookDao {
         String sql = """
             UPDATE books
             SET title = ?, author = ?, total_pages = ?, total_parts = ?, current_page = ?, status = ?,
-                description = ?, cover_image = ?, date_started = ?, date_completed = ?
+                description = ?, cover_image = ?, date_started = ?, date_completed = ?,
+                category = ?, publisher = ?, isbn = ?, tags = ?, is_favorite = ?, is_wishlist = ?
             WHERE id = ?;
             """;
 
@@ -94,7 +105,13 @@ public class SqliteBookDao implements BookDao {
             stmt.setString(8, book.getCoverImage());
             stmt.setString(9, book.getDateStarted() != null ? book.getDateStarted().format(DATE_FORMATTER) : null);
             stmt.setString(10, book.getDateCompleted() != null ? book.getDateCompleted().format(DATE_FORMATTER) : null);
-            stmt.setLong(11, book.getId());
+            stmt.setString(11, book.getCategory());
+            stmt.setString(12, book.getPublisher());
+            stmt.setString(13, book.getIsbn());
+            stmt.setString(14, book.getTags());
+            stmt.setInt(15, book.isFavorite() ? 1 : 0);
+            stmt.setInt(16, book.isWishlist() ? 1 : 0);
+            stmt.setLong(17, book.getId());
 
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -167,6 +184,12 @@ public class SqliteBookDao implements BookDao {
 
     @Override
     public List<Book> search(String query, ReadingStatus statusFilter, String sortBy, boolean ascending) {
+        return search(query, statusFilter, null, null, null, null, sortBy, ascending);
+    }
+
+    @Override
+    public List<Book> search(String query, ReadingStatus statusFilter, String categoryFilter, String tagFilter,
+                             Boolean isFavorite, Boolean isWishlist, String sortBy, boolean ascending) {
         StringBuilder sql = new StringBuilder("""
             SELECT b.*,
                 (SELECT count(*) FROM chapters WHERE book_id = b.id) AS total_chapters,
@@ -175,15 +198,44 @@ public class SqliteBookDao implements BookDao {
         List<Object> params = new ArrayList<>();
 
         if (query != null && !query.trim().isEmpty()) {
-            sql.append("AND (LOWER(b.title) LIKE ? OR LOWER(b.author) LIKE ?) ");
+            sql.append("""
+                AND (
+                    LOWER(b.title) LIKE ?
+                    OR LOWER(b.author) LIKE ?
+                    OR LOWER(COALESCE(b.publisher, '')) LIKE ?
+                    OR LOWER(COALESCE(b.isbn, '')) LIKE ?
+                    OR LOWER(COALESCE(b.category, '')) LIKE ?
+                    OR LOWER(COALESCE(b.tags, '')) LIKE ?
+                )\s""");
             String wildcard = "%" + query.trim().toLowerCase() + "%";
-            params.add(wildcard);
-            params.add(wildcard);
+            for (int i = 0; i < 6; i++) {
+                params.add(wildcard);
+            }
         }
 
         if (statusFilter != null) {
             sql.append("AND b.status = ? ");
             params.add(statusFilter.name());
+        }
+
+        if (categoryFilter != null && !categoryFilter.trim().isEmpty()) {
+            sql.append("AND LOWER(b.category) = LOWER(?) ");
+            params.add(categoryFilter.trim());
+        }
+
+        if (tagFilter != null && !tagFilter.trim().isEmpty()) {
+            sql.append("AND LOWER(COALESCE(b.tags, '')) LIKE ? ");
+            params.add("%" + tagFilter.trim().toLowerCase() + "%");
+        }
+
+        if (isFavorite != null) {
+            sql.append("AND b.is_favorite = ? ");
+            params.add(isFavorite ? 1 : 0);
+        }
+
+        if (isWishlist != null) {
+            sql.append("AND b.is_wishlist = ? ");
+            params.add(isWishlist ? 1 : 0);
         }
 
         // Safe order by column mapping
@@ -192,15 +244,20 @@ public class SqliteBookDao implements BookDao {
             orderColumn = "LOWER(b.title)";
         } else if ("author".equalsIgnoreCase(sortBy)) {
             orderColumn = "LOWER(b.author)";
+        } else if ("publisher".equalsIgnoreCase(sortBy)) {
+            orderColumn = "LOWER(COALESCE(b.publisher, ''))";
+        } else if ("category".equalsIgnoreCase(sortBy)) {
+            orderColumn = "LOWER(COALESCE(b.category, ''))";
         } else if ("progress".equalsIgnoreCase(sortBy)) {
             orderColumn = "(CAST(b.current_page AS REAL) / b.total_pages)";
         } else if ("total_pages".equalsIgnoreCase(sortBy)) {
             orderColumn = "b.total_pages";
         } else {
-            orderColumn = "b.id";
+            orderColumn = "b.date_added";
         }
 
         sql.append("ORDER BY ").append(orderColumn).append(ascending ? " ASC" : " DESC");
+        sql.append(", b.id").append(ascending ? " ASC" : " DESC");
 
         List<Book> books = new ArrayList<>();
         try (Connection conn = databaseManager.getConnection();
@@ -221,6 +278,77 @@ public class SqliteBookDao implements BookDao {
         }
 
         return books;
+    }
+
+    @Override
+    public List<String> findAllCategories() {
+        String sql = "SELECT DISTINCT category FROM books WHERE category IS NOT NULL AND TRIM(category) != '' ORDER BY category COLLATE NOCASE ASC;";
+        List<String> categories = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String cat = rs.getString(1);
+                if (cat != null && !cat.trim().isEmpty()) {
+                    categories.add(cat.trim());
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load distinct categories", e);
+        }
+        return categories;
+    }
+
+    @Override
+    public List<String> findAllTags() {
+        String sql = "SELECT tags FROM books WHERE tags IS NOT NULL AND TRIM(tags) != '';";
+        java.util.Set<String> tagSet = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String raw = rs.getString(1);
+                if (raw != null) {
+                    for (String t : raw.split(",")) {
+                        String clean = t.trim();
+                        if (!clean.isEmpty()) {
+                            tagSet.add(clean);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load tags", e);
+        }
+        return new ArrayList<>(tagSet);
+    }
+
+    @Override
+    public void toggleFavorite(long id, boolean isFavorite) {
+        String sql = "UPDATE books SET is_favorite = ? WHERE id = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, isFavorite ? 1 : 0);
+            stmt.setLong(2, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to toggle favorite for book id: " + id, e);
+            throw new RuntimeException("Database error updating favorite status", e);
+        }
+    }
+
+    @Override
+    public void toggleWishlist(long id, boolean isWishlist) {
+        String sql = "UPDATE books SET is_wishlist = ? WHERE id = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, isWishlist ? 1 : 0);
+            stmt.setLong(2, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to toggle wishlist for book id: " + id, e);
+            throw new RuntimeException("Database error updating wishlist status", e);
+        }
     }
 
     @Override
@@ -347,6 +475,16 @@ public class SqliteBookDao implements BookDao {
         try {
             book.setTotalChaptersCount(rs.getInt("total_chapters"));
             book.setCompletedChaptersCount(rs.getInt("completed_chapters"));
+        } catch (SQLException ignored) {
+        }
+
+        try {
+            book.setCategory(rs.getString("category"));
+            book.setPublisher(rs.getString("publisher"));
+            book.setIsbn(rs.getString("isbn"));
+            book.setTags(rs.getString("tags"));
+            book.setFavorite(rs.getInt("is_favorite") == 1);
+            book.setWishlist(rs.getInt("is_wishlist") == 1);
         } catch (SQLException ignored) {
         }
 

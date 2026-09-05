@@ -106,4 +106,40 @@ class BookServiceTest {
         assertEquals(ReadingStatus.COMPLETED, updated.getStatus());
         assertEquals(LocalDate.now(), updated.getDateCompleted());
     }
+
+    @Test
+    @DisplayName("Test ISBN Validation")
+    void testIsbnValidation() {
+        Book book = new Book("Valid Book", "Valid Author", 200, 1);
+        book.setIsbn("12345678901234567890123456789012345"); // > 30 chars
+        assertThrows(IllegalArgumentException.class, () -> bookService.addBook(book));
+
+        book.setIsbn("978-0132350884");
+        assertDoesNotThrow(() -> bookService.addBook(book));
+    }
+
+    @Test
+    @DisplayName("Test Service Organization Delegates")
+    void testOrganizationDelegates() {
+        Book b = new Book("Clean Architecture", "Robert C. Martin", 350, 1);
+        b.setCategory("Architecture");
+        b.setTags("solid, architecture, clean-code");
+        b.setPublisher("Pearson");
+        Book saved = bookService.addBook(b);
+
+        assertTrue(bookService.getAllCategories().contains("Architecture"));
+        assertTrue(bookService.getAllTags().contains("solid"));
+
+        bookService.toggleFavorite(saved.getId(), true);
+        Book withFav = bookService.getBookById(saved.getId()).orElseThrow();
+        assertTrue(withFav.isFavorite());
+
+        bookService.toggleWishlist(saved.getId(), true);
+        Book withWish = bookService.getBookById(saved.getId()).orElseThrow();
+        assertTrue(withWish.isWishlist());
+
+        var results = bookService.searchBooks(null, null, "Architecture", "solid", true, true, "title", true);
+        assertEquals(1, results.size());
+        assertEquals("Clean Architecture", results.get(0).getTitle());
+    }
 }

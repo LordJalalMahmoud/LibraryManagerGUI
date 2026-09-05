@@ -8,7 +8,7 @@
 [![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://openjdk.org/projects/jdk/21/)
 [![JavaFX](https://img.shields.io/badge/JavaFX-21-blue.svg)](https://openjfx.io/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-lightgrey.svg)](https://www.sqlite.org/)
-[![Tests](https://img.shields.io/badge/Tests-23%20Passed%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-28%20Passed%20(100%25)-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 > A commercial-grade, cross-platform personal library and reading management system engineered with strict **N-Tier layered architecture (SOLID)**, **automated CI/CD pipelines**, **native self-contained OS packaging**, and **full Arabic (RTL) & English localization**.
@@ -17,36 +17,30 @@
   <img src="src/main/resources/icons/app-icon.png" alt="LibraryManager Icon" width="112" style="border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
 </p>
 
-| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (23 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🎓 **University Curriculum Chapter Tracker** |
+| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (28 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🏷️ **Categories, Tags, Favorites & Wishlist** |
 | :---: | :---: | :---: | :---: |
 
 ---
 
 ## ⚡ Quick Navigation
-- [📦 Downloads & Native Installers](#-downloads--native-installers)
-- [✨ Key Features](#-key-features)
-- [🏛️ Software Architecture & Design Patterns](#-software-architecture--design-patterns)
-- [🧪 Automated Testing Suite](#-automated-testing-suite)
-- [⚙️ CI/CD & Native Packaging (DevOps)](#-cicd--native-packaging-devops)
-- [🚀 Developer Quick Start](#-developer-quick-start)
-- [📂 Codebase Structure](#-codebase-structure)
+- [Download Native Installers](#-zero-dependency-native-downloads)
+- [Key Features](#-key-features)
+- [Software Architecture](#-software-architecture)
+- [Continuous Integration & CD](#-continuous-integration--automation)
+- [Developer Setup & Build](#-developer-setup--build-instructions)
+- [Codebase Structure](#-codebase-structure)
 
 ---
 
-## 📦 Downloads & Native Installers
+## 📦 Zero-Dependency Native Downloads
 
-Production-ready, standalone native installers built automatically via GitHub Actions with a **bundled, minimal Java Runtime Environment (JRE)**. **End-users do not need Java installed on their machine.**
+Download production-ready native desktop packages that run **without requiring Java or any runtime pre-installed**:
 
-👉 **[Download the Latest Release (v1.0.0)](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest)**
-
-| OS / Platform | Package Format | Download Link | Quick Installation / Execution |
+| OS | Format | Direct Download | Description |
 | :--- | :--- | :--- | :--- |
-| 🐧 **Linux (Ubuntu/Debian)** | Native `.deb` Installer | [`library-manager_1.0.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | `sudo apt install ./library-manager_1.0.0_amd64.deb` |
-| 🐧 **Linux (All Distros)** | Standalone Portable | [`LibraryManager-1.0.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Extract and run `./LibraryManager/bin/LibraryManager` |
-| 🪟 **Windows** | Native `.msi` Installer | [`LibraryManager-1.0.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standard Windows setup wizard with Start Menu shortcut |
-| 🪟 **Windows** | Portable `.zip` | [`LibraryManager-1.0.0-windows-x64.zip`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Extract and run `LibraryManager.exe` |
-| 🍏 **macOS** | Disk Image `.dmg` | [`LibraryManager-1.0.0.dmg`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Drag-and-drop into `/Applications` |
-| 🍏 **macOS** | Native `.pkg` Installer | [`LibraryManager-1.0.0.pkg`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standard Apple guided installer |
+| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.0.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
+| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.0.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
+| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.0.0.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
 | 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.0.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
 
 ---
@@ -61,7 +55,14 @@ Production-ready, standalone native installers built automatically via GitHub Ac
   - **Reading Progress Velocity**: Bar Chart comparing completed pages against remaining unread pages.
 - **Spotlight Widgets**: Fast access to "Currently Reading" books with instant `+10 pages` advancement and recently added titles.
 
-### 2. 🎓 University Curriculum & Course Chapters
+### 2. 🏷️ Multi-Dimensional Organization & Discovery
+- **Categories & Publishers**: Organize by academic or genre classification (e.g. *Software Engineering*, *Programming*, *Architecture*) with category filter dropdown and publisher metadata.
+- **Tagging System**: Assign comma-separated tags (`#clean-code`, `#java`, `#architecture`) with elegant badge chips on cards and details.
+- **ISBN Cataloging**: International Standard Book Number support with format validation and instant ISBN search lookup.
+- **Favorites (❤️) & Wishlist (🌟)**: One-click interactive heart toggle on card covers and dedicated filter pills (`❤️ Favorites`, `🌟 Wishlist`) for instant discovery.
+- **Multi-Criteria Search & Filter**: Real-time search across Title, Author, Publisher, ISBN, Category, and Tags with status and category dropdowns.
+
+### 3. 🎓 University Curriculum & Course Chapters
 - **Chapter-Level Tracking**: Tailored for college students who read selective chapters rather than whole textbooks.
 - **Completion Checkboxes**: Toggle individual chapters complete/incomplete with instant progress re-calculation.
 - **Assigned Page Ranges**: Specify custom ranges (`pp. 45 - 80`) and lecture topic notes for each chapter.
@@ -146,13 +147,13 @@ Comprehensive unit and integration testing suite utilizing **JUnit 5**, ensuring
 | Test Class | Scope & Coverage | Tests | Status |
 | :--- | :--- | :---: | :---: |
 | [`BookTest`](src/test/java/com/librarymanager/model/BookTest.java) | Domain formula calculations, percentage rounding, boundary clamping | 3 | ✅ Passed |
-| [`BookDaoTest`](src/test/java/com/librarymanager/dao/BookDaoTest.java) | SQLite CRUD, live search queries, multi-sort orders, cascade deletions | 4 | ✅ Passed |
-| [`BookServiceTest`](src/test/java/com/librarymanager/service/BookServiceTest.java) | Business validation, page boundary enforcement, automated status transitions | 4 | ✅ Passed |
+| [`BookDaoTest`](src/test/java/com/librarymanager/dao/BookDaoTest.java) | SQLite CRUD, category/tag/favorite persistence, multi-criteria search queries | 7 | ✅ Passed |
+| [`BookServiceTest`](src/test/java/com/librarymanager/service/BookServiceTest.java) | Business validation, ISBN checks, page boundaries, automated transitions | 6 | ✅ Passed |
 | [`ChapterServiceTest`](src/test/java/com/librarymanager/service/ChapterServiceTest.java) | Chapter completion ratios, page calculations, and book progress sync | 4 | ✅ Passed |
 | [`SettingsServiceTest`](src/test/java/com/librarymanager/service/SettingsServiceTest.java) | Theme preferences, safety dialog flags, and language persistence | 3 | ✅ Passed |
 | [`BackupServiceTest`](src/test/java/com/librarymanager/service/BackupServiceTest.java) | SQLite database file export, verification, and restore routines | 2 | ✅ Passed |
 | [`I18nTest`](src/test/java/com/librarymanager/util/I18nTest.java) | Bilingual bundle key parity, RTL layout resolution, parameter formatting | 3 | ✅ Passed |
-| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **23** | **✅ 100% Passed** |
+| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **28** | **✅ 100% Passed** |
 
 Execute all tests locally with:
 ```bash

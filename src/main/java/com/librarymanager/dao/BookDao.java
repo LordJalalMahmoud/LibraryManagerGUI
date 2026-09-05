@@ -17,7 +17,17 @@ public interface BookDao {
     Optional<Book> findById(long id);
     List<Book> findAll();
     List<Book> findByStatus(ReadingStatus status);
-    List<Book> search(String query, ReadingStatus statusFilter, String sortBy, boolean ascending);
+    List<Book> search(String query, ReadingStatus statusFilter, String categoryFilter, String tagFilter, Boolean isFavorite, Boolean isWishlist, String sortBy, boolean ascending);
+
+    default List<Book> search(String query, ReadingStatus statusFilter, String sortBy, boolean ascending) {
+        return search(query, statusFilter, null, null, null, null, sortBy, ascending);
+    }
+
+    List<String> findAllCategories();
+    List<String> findAllTags();
+    void toggleFavorite(long id, boolean isFavorite);
+    void toggleWishlist(long id, boolean isWishlist);
+
     LibraryStats getStatistics();
     void deleteAll();
 }

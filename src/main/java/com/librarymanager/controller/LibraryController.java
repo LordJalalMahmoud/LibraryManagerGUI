@@ -40,9 +40,14 @@ public class LibraryController {
 
     // Controls
     private TextField searchField;
+    private ComboBox<String> categoryComboBox;
     private ComboBox<SortOption> sortComboBox;
     private final List<Button> filterButtons = new ArrayList<>();
-    private ReadingStatus activeStatusFilter = null;
+
+    public enum FilterMode {
+        ALL, READING, COMPLETED, NOT_STARTED, FAVORITES, WISHLIST
+    }
+    private FilterMode activeFilterMode = FilterMode.ALL;
 
     private PauseTransition searchDebounce;
 
@@ -51,12 +56,12 @@ public class LibraryController {
         this.bookService = bookService;
         this.settingsService = settingsService;
 
-        rootBox = new VBox(18);
+        rootBox = new VBox(16);
         rootBox.setFillWidth(true);
         rootBox.setNodeOrientation(I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
 
         // Filter & Search Toolbar
-        HBox toolbar = buildToolbar();
+        VBox toolbar = buildToolbar();
         rootBox.getChildren().add(toolbar);
 
         // Content Area with Grid & Empty State
@@ -83,11 +88,13 @@ public class LibraryController {
         return rootBox;
     }
 
-    private HBox buildToolbar() {
-        HBox bar = new HBox(12);
-        bar.setAlignment(Pos.CENTER_LEFT);
+    private VBox buildToolbar() {
+        VBox bar = new VBox(10);
 
-        // Search Input
+        // Row 1: Search Input + Category Filter + Sort Dropdown
+        HBox topRow = new HBox(12);
+        topRow.setAlignment(Pos.CENTER_LEFT);
+
         HBox searchContainer = new HBox(8);
         searchContainer.setAlignment(Pos.CENTER_LEFT);
         searchContainer.getStyleClass().add("search-field");
@@ -103,25 +110,16 @@ public class LibraryController {
 
         searchDebounce = new PauseTransition(Duration.millis(200));
         searchDebounce.setOnFinished(e -> reloadBooks());
-
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            searchDebounce.playFromStart();
-        });
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> searchDebounce.playFromStart());
 
         searchContainer.getChildren().addAll(searchIcon, searchField);
 
-        // Filter Pills
-        HBox filterGroup = new HBox(6);
-        filterGroup.setAlignment(Pos.CENTER_LEFT);
-
-        Button filterAll = createFilterButton(I18n.get("library.filter.all"), null);
-        Button filterReading = createFilterButton(ReadingStatus.READING.getDisplayName(), ReadingStatus.READING);
-        Button filterCompleted = createFilterButton(ReadingStatus.COMPLETED.getDisplayName(), ReadingStatus.COMPLETED);
-        Button filterNotStarted = createFilterButton(ReadingStatus.NOT_STARTED.getDisplayName(), ReadingStatus.NOT_STARTED);
-
-        filterButtons.addAll(List.of(filterAll, filterReading, filterCompleted, filterNotStarted));
-        filterGroup.getChildren().addAll(filterAll, filterReading, filterCompleted, filterNotStarted);
-        setActiveFilterButton(filterAll);
+        // Category Filter Dropdown
+        categoryComboBox = new ComboBox<>();
+        categoryComboBox.getStyleClass().add("combo-box");
+        categoryComboBox.setPrefWidth(160);
+        refreshCategories();
+        categoryComboBox.setOnAction(e -> reloadBooks());
 
         // Sort Dropdown
         sortComboBox = new ComboBox<>();
@@ -137,27 +135,58 @@ public class LibraryController {
         sortComboBox.getSelectionModel().selectFirst();
         sortComboBox.setOnAction(e -> reloadBooks());
 
-        bar.getChildren().addAll(searchContainer, filterGroup, sortComboBox);
+        topRow.getChildren().addAll(searchContainer, categoryComboBox, sortComboBox);
+
+        // Row 2: Filter Pills
+        HBox filterGroup = new HBox(8);
+        filterGroup.setAlignment(Pos.CENTER_LEFT);
+
+        Button filterAll = createFilterButton(I18n.get("library.filter.all"), FilterMode.ALL);
+        Button filterReading = createFilterButton(ReadingStatus.READING.getDisplayName(), FilterMode.READING);
+        Button filterCompleted = createFilterButton(ReadingStatus.COMPLETED.getDisplayName(), FilterMode.COMPLETED);
+        Button filterNotStarted = createFilterButton(ReadingStatus.NOT_STARTED.getDisplayName(), FilterMode.NOT_STARTED);
+        Button filterFavorites = createFilterButton("❤️ " + I18n.get("library.filter.favorites"), FilterMode.FAVORITES);
+        Button filterWishlist = createFilterButton("🌟 " + I18n.get("library.filter.wishlist"), FilterMode.WISHLIST);
+
+        filterButtons.addAll(List.of(filterAll, filterReading, filterCompleted, filterNotStarted, filterFavorites, filterWishlist));
+        filterGroup.getChildren().addAll(filterAll, filterReading, filterCompleted, filterNotStarted, filterFavorites, filterWishlist);
+        updateActiveFilterButtonUI();
+
+        bar.getChildren().addAll(topRow, filterGroup);
         return bar;
     }
 
-    private Button createFilterButton(String label, ReadingStatus status) {
+    public void refreshCategories() {
+        String currentSelection = categoryComboBox.getValue();
+        List<String> categories = bookService.getAllCategories();
+        categoryComboBox.getItems().clear();
+        categoryComboBox.getItems().add(I18n.get("library.category.all"));
+        categoryComboBox.getItems().addAll(categories);
+        if (currentSelection != null && categoryComboBox.getItems().contains(currentSelection)) {
+            categoryComboBox.setValue(currentSelection);
+        } else {
+            categoryComboBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    private Button createFilterButton(String label, FilterMode mode) {
         Button btn = new Button(label);
         btn.getStyleClass().add("filter-pill");
         btn.setOnAction(e -> {
-            this.activeStatusFilter = status;
-            setActiveFilterButton(btn);
+            this.activeFilterMode = mode;
+            updateActiveFilterButtonUI();
             reloadBooks();
         });
         return btn;
     }
 
-    private void setActiveFilterButton(Button active) {
+    private void updateActiveFilterButtonUI() {
         for (Button b : filterButtons) {
             b.getStyleClass().remove("active");
         }
-        if (active != null && !active.getStyleClass().contains("active")) {
-            active.getStyleClass().add("active");
+        int index = activeFilterMode.ordinal();
+        if (index >= 0 && index < filterButtons.size()) {
+            filterButtons.get(index).getStyleClass().add("active");
         }
     }
 
@@ -181,7 +210,10 @@ public class LibraryController {
         actionBtn.getStyleClass().addAll("btn", "btn-secondary");
         actionBtn.setOnAction(e -> {
             searchField.clear();
-            applyFilter(null);
+            categoryComboBox.getSelectionModel().selectFirst();
+            activeFilterMode = FilterMode.ALL;
+            updateActiveFilterButtonUI();
+            reloadBooks();
         });
 
         box.getChildren().addAll(icon, title, desc, actionBtn);
@@ -189,15 +221,16 @@ public class LibraryController {
     }
 
     public void applyFilter(ReadingStatus status) {
-        this.activeStatusFilter = status;
-        for (Button btn : filterButtons) {
-            String text = btn.getText();
-            if (status == null && I18n.get("library.filter.all").equals(text)) {
-                setActiveFilterButton(btn);
-            } else if (status != null && status.getDisplayName().equalsIgnoreCase(text)) {
-                setActiveFilterButton(btn);
-            }
+        if (status == null) {
+            activeFilterMode = FilterMode.ALL;
+        } else if (status == ReadingStatus.READING) {
+            activeFilterMode = FilterMode.READING;
+        } else if (status == ReadingStatus.COMPLETED) {
+            activeFilterMode = FilterMode.COMPLETED;
+        } else if (status == ReadingStatus.NOT_STARTED) {
+            activeFilterMode = FilterMode.NOT_STARTED;
         }
+        updateActiveFilterButtonUI();
         reloadBooks();
     }
 
@@ -207,7 +240,26 @@ public class LibraryController {
         String sortBy = sort != null ? sort.column : "date_added";
         boolean ascending = sort != null && sort.ascending;
 
-        List<Book> books = bookService.searchBooks(query, activeStatusFilter, sortBy, ascending);
+        ReadingStatus status = null;
+        Boolean isFavorite = null;
+        Boolean isWishlist = null;
+
+        switch (activeFilterMode) {
+            case READING -> status = ReadingStatus.READING;
+            case COMPLETED -> status = ReadingStatus.COMPLETED;
+            case NOT_STARTED -> status = ReadingStatus.NOT_STARTED;
+            case FAVORITES -> isFavorite = true;
+            case WISHLIST -> isWishlist = true;
+            default -> {}
+        }
+
+        String selectedCat = categoryComboBox.getValue();
+        String categoryFilter = null;
+        if (selectedCat != null && !selectedCat.equals(I18n.get("library.category.all"))) {
+            categoryFilter = selectedCat;
+        }
+
+        List<Book> books = bookService.searchBooks(query, status, categoryFilter, null, isFavorite, isWishlist, sortBy, ascending);
 
         bookGrid.getChildren().clear();
 
@@ -228,11 +280,23 @@ public class LibraryController {
                         book -> mainController.navigateToBookDetails(book),
                         book -> mainController.openBookFormDialog(book),
                         (comp, book) -> handleDeleteBook(comp, book),
-                        book -> handleQuickAdvance(book, 10)
+                        book -> handleQuickAdvance(book, 10),
+                        book -> handleToggleFavorite(book)
                 );
                 bookGrid.getChildren().add(card);
             }
         }
+    }
+
+    private void handleToggleFavorite(Book book) {
+        boolean newFavorite = !book.isFavorite();
+        bookService.toggleFavorite(book.getId(), newFavorite);
+        book.setFavorite(newFavorite);
+        String msg = newFavorite
+                ? I18n.get("toast.favorite_added", book.getTitle())
+                : I18n.get("toast.favorite_removed", book.getTitle());
+        mainController.showToast(msg, ToastNotification.ToastType.SUCCESS);
+        reloadBooks();
     }
 
     private void handleQuickAdvance(Book book, int pages) {

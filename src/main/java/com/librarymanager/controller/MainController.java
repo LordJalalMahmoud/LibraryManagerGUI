@@ -405,6 +405,7 @@ public class MainController extends BorderPane {
             dashboardController.refresh();
         }
         if (libraryController != null) {
+            libraryController.refreshCategories();
             libraryController.reloadBooks();
         }
         if (settingsController != null) {

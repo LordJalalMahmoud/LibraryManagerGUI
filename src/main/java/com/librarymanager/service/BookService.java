@@ -59,6 +59,11 @@ public class BookService {
         if (book.getCurrentPage() > book.getTotalPages()) {
             throw new IllegalArgumentException("Current page cannot exceed total pages (" + book.getTotalPages() + ").");
         }
+        if (book.getIsbn() != null && !book.getIsbn().trim().isEmpty()) {
+            if (book.getIsbn().trim().length() > 30) {
+                throw new IllegalArgumentException("ISBN is too long (maximum 30 characters).");
+            }
+        }
     }
 
     /**
@@ -187,6 +192,27 @@ public class BookService {
 
     public List<Book> searchBooks(String query, ReadingStatus statusFilter, String sortBy, boolean ascending) {
         return bookDao.search(query, statusFilter, sortBy, ascending);
+    }
+
+    public List<Book> searchBooks(String query, ReadingStatus statusFilter, String categoryFilter, String tagFilter,
+                                  Boolean isFavorite, Boolean isWishlist, String sortBy, boolean ascending) {
+        return bookDao.search(query, statusFilter, categoryFilter, tagFilter, isFavorite, isWishlist, sortBy, ascending);
+    }
+
+    public List<String> getAllCategories() {
+        return bookDao.findAllCategories();
+    }
+
+    public List<String> getAllTags() {
+        return bookDao.findAllTags();
+    }
+
+    public void toggleFavorite(long id, boolean isFavorite) {
+        bookDao.toggleFavorite(id, isFavorite);
+    }
+
+    public void toggleWishlist(long id, boolean isWishlist) {
+        bookDao.toggleWishlist(id, isWishlist);
     }
 
     public LibraryStats getLibraryStatistics() {

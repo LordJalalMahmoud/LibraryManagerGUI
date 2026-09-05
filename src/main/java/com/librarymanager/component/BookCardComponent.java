@@ -18,6 +18,7 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 
 import java.io.File;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -39,9 +40,18 @@ public class BookCardComponent extends VBox {
                              Consumer<Book> onEdit,
                              BiConsumer<BookCardComponent, Book> onDelete,
                              Consumer<Book> onQuickAdvance) {
+        this(book, onOpen, onEdit, onDelete, onQuickAdvance, null);
+    }
+
+    public BookCardComponent(Book book,
+                             Consumer<Book> onOpen,
+                             Consumer<Book> onEdit,
+                             BiConsumer<BookCardComponent, Book> onDelete,
+                             Consumer<Book> onQuickAdvance,
+                             Consumer<Book> onToggleFavorite) {
         this.book = book;
         getStyleClass().add("book-card");
-        setSpacing(12);
+        setSpacing(10);
         setPadding(new Insets(14));
         setPrefWidth(240);
         setMaxWidth(300);
@@ -54,16 +64,53 @@ public class BookCardComponent extends VBox {
             if (onOpen != null) onOpen.accept(book);
         });
 
-        // 2. Status Badge Chip
+        // Quick favorite toggle button on cover
+        Button favBtn = new Button();
+        favBtn.getStyleClass().addAll("btn", "btn-icon", "btn-sm");
+        SVGPath favIcon = IconUtil.createIcon(IconUtil.IconType.HEART, 14);
+        if (book.isFavorite()) {
+            favIcon.setStyle("-fx-fill: #ef4444;");
+            favBtn.setTooltip(new Tooltip(I18n.get("book.favorite.remove_tooltip")));
+        } else {
+            favIcon.setStyle("-fx-fill: rgba(255,255,255,0.7);");
+            favBtn.setTooltip(new Tooltip(I18n.get("book.favorite.tooltip")));
+        }
+        favBtn.setGraphic(favIcon);
+        favBtn.setStyle("-fx-background-color: rgba(0, 0, 0, 0.45); -fx-background-radius: 50%; -fx-min-width: 28px; -fx-min-height: 28px; -fx-max-width: 28px; -fx-max-height: 28px; -fx-cursor: hand; -fx-padding: 0;");
+        StackPane.setAlignment(favBtn, I18n.isRTL() ? Pos.TOP_LEFT : Pos.TOP_RIGHT);
+        StackPane.setMargin(favBtn, new Insets(8));
+        favBtn.setOnAction(e -> {
+            e.consume();
+            if (onToggleFavorite != null) {
+                onToggleFavorite.accept(book);
+            }
+        });
+        coverContainer.getChildren().add(favBtn);
+
+        // 2. Status Badge Chip & Metadata Chips
         statusChip = new Label(book.getStatus().getDisplayName());
         statusChip.getStyleClass().addAll("badge-chip", book.getStatus().getStyleClass());
 
-        HBox badgeRow = new HBox(8, statusChip);
+        HBox badgeRow = new HBox(6);
         badgeRow.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        badgeRow.getChildren().add(statusChip);
+
+        if (book.getCategory() != null && !book.getCategory().trim().isEmpty()) {
+            Label catBadge = new Label(book.getCategory().trim());
+            catBadge.setStyle("-fx-background-color: -surface-border; -fx-text-fill: -text-main; -fx-font-size: 10px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 12px;");
+            badgeRow.getChildren().add(catBadge);
+        }
+
+        if (book.isWishlist()) {
+            Label wishBadge = new Label("🌟");
+            wishBadge.setTooltip(new Tooltip(I18n.get("book.wishlist")));
+            wishBadge.setStyle("-fx-font-size: 11px;");
+            badgeRow.getChildren().add(wishBadge);
+        }
 
         if (book.hasChapters()) {
             Label chapterBadge = new Label(I18n.get("chapters.badge", book.getCompletedChaptersCount(), book.getTotalChaptersCount()));
-            chapterBadge.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            chapterBadge.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 10px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 12px;");
             badgeRow.getChildren().add(chapterBadge);
         }
 
@@ -78,7 +125,25 @@ public class BookCardComponent extends VBox {
         authorLabel.getStyleClass().add("book-card-author");
         authorLabel.setTooltip(new Tooltip(book.getAuthor()));
 
-        // 4. Meta info (Pages, Parts)
+        // 4. Tags Chip Row
+        HBox tagBox = null;
+        List<String> tagList = book.getTagList();
+        if (!tagList.isEmpty()) {
+            tagBox = new HBox(4);
+            tagBox.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+            for (int i = 0; i < Math.min(3, tagList.size()); i++) {
+                Label tagChip = new Label("#" + tagList.get(i));
+                tagChip.setStyle("-fx-font-size: 10px; -fx-text-fill: -accent-primary; -fx-background-color: -accent-subtle; -fx-padding: 2 6 2 6; -fx-background-radius: 6px;");
+                tagBox.getChildren().add(tagChip);
+            }
+            if (tagList.size() > 3) {
+                Label moreChip = new Label("+" + (tagList.size() - 3));
+                moreChip.setStyle("-fx-font-size: 10px; -fx-text-fill: -text-muted;");
+                tagBox.getChildren().add(moreChip);
+            }
+        }
+
+        // 5. Meta info (Pages, Parts)
         HBox metaRow = new HBox();
         metaRow.setSpacing(10);
         metaRow.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
@@ -94,7 +159,7 @@ public class BookCardComponent extends VBox {
 
         metaRow.getChildren().addAll(pagesLabel, new Label("•"), partsLabel);
 
-        // 5. Reading Progress Section
+        // 6. Reading Progress Section
         VBox progressSection = new VBox(6);
         HBox progressHeader = new HBox();
         progressHeader.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
@@ -118,7 +183,7 @@ public class BookCardComponent extends VBox {
 
         progressSection.getChildren().addAll(progressHeader, progressBar);
 
-        // 6. Action Bar
+        // 7. Action Bar
         HBox actionBar = new HBox(8);
         actionBar.setAlignment(I18n.isRTL() ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
         actionBar.setPadding(new Insets(4, 0, 0, 0));
@@ -158,7 +223,11 @@ public class BookCardComponent extends VBox {
         actionBar.getChildren().addAll(openBtn, editBtn, deleteBtn);
 
         // Assembly
-        getChildren().addAll(coverContainer, badgeRow, titleLabel, authorLabel, metaRow, progressSection, actionBar);
+        getChildren().addAll(coverContainer, badgeRow, titleLabel, authorLabel);
+        if (tagBox != null) {
+            getChildren().add(tagBox);
+        }
+        getChildren().addAll(metaRow, progressSection, actionBar);
 
         AnimationUtil.addCardHover(this);
     }
