@@ -108,13 +108,23 @@ public class SqliteBookDao implements BookDao {
         String deleteChapters = "DELETE FROM chapters WHERE book_id = ?;";
         String deleteBook = "DELETE FROM books WHERE id = ?;";
         try (Connection conn = databaseManager.getConnection()) {
-            try (PreparedStatement stmt1 = conn.prepareStatement(deleteChapters)) {
-                stmt1.setLong(1, id);
-                stmt1.executeUpdate();
-            }
-            try (PreparedStatement stmt2 = conn.prepareStatement(deleteBook)) {
-                stmt2.setLong(1, id);
-                stmt2.executeUpdate();
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmt1 = conn.prepareStatement(deleteChapters)) {
+                    stmt1.setLong(1, id);
+                    stmt1.executeUpdate();
+                }
+                try (PreparedStatement stmt2 = conn.prepareStatement(deleteBook)) {
+                    stmt2.setLong(1, id);
+                    stmt2.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(originalAutoCommit);
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to delete book id: " + id, e);
@@ -278,10 +288,19 @@ public class SqliteBookDao implements BookDao {
 
     @Override
     public void deleteAll() {
-        String sql = "DELETE FROM books;";
-        try (Connection conn = databaseManager.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
+        try (Connection conn = databaseManager.getConnection()) {
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("DELETE FROM chapters;");
+                stmt.execute("DELETE FROM books;");
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(originalAutoCommit);
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to delete all books", e);
             throw new RuntimeException("Database error resetting books", e);

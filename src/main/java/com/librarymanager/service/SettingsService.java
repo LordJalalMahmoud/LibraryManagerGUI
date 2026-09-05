@@ -7,11 +7,15 @@ import com.librarymanager.util.I18n;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Service managing user settings, theme preferences, and application language persistence.
  */
 public class SettingsService {
+    private static final Logger LOGGER = Logger.getLogger(SettingsService.class.getName());
+
     public static final String KEY_THEME = "theme";
     public static final String KEY_CONFIRM_DELETE = "confirm_delete";
     public static final String KEY_LANGUAGE = "language";
@@ -94,7 +98,8 @@ public class SettingsService {
         for (Consumer<String> listener : themeChangeListeners) {
             try {
                 listener.accept(newTheme);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error executing theme change listener", e);
             }
         }
     }
@@ -103,7 +108,8 @@ public class SettingsService {
         for (Consumer<String> listener : languageChangeListeners) {
             try {
                 listener.accept(newLanguage);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error executing language change listener", e);
             }
         }
     }

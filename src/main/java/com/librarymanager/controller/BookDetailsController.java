@@ -24,12 +24,15 @@ import javafx.scene.shape.SVGPath;
 
 import java.io.File;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Dedicated, visually impressive book details and reading experience screen
  * with university course chapter assignments tracking, i18n & RTL.
  */
 public class BookDetailsController {
+    private static final Logger LOGGER = Logger.getLogger(BookDetailsController.class.getName());
 
     private final MainController mainController;
     private final BookService bookService;
@@ -539,7 +542,8 @@ public class BookDetailsController {
                     container.getChildren().add(iv);
                     imageLoaded = true;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Failed to load cover image: " + book.getCoverImage(), e);
             }
         }
 

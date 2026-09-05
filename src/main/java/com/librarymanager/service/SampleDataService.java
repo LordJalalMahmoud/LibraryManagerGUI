@@ -1,6 +1,7 @@
 package com.librarymanager.service;
 
 import com.librarymanager.model.Book;
+import com.librarymanager.model.Chapter;
 import com.librarymanager.model.ReadingStatus;
 
 import java.time.LocalDate;
@@ -94,18 +95,25 @@ public class SampleDataService {
             // Add realistic university course reading chapters
             if (saved.getTitle().contains("Clean Code")) {
                 ChapterService cs = bookService.getChapterService();
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 1, "Clean Code Overview", 1, 14) {{ setCompleted(true); setNotes("Lecture 1 - Introduction & Bad Code Costs"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 2, "Meaningful Names", 17, 36) {{ setCompleted(true); setNotes("Lecture 2 - Intent-revealing names & abstractions"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 3, "Functions", 37, 64) {{ setCompleted(true); setNotes("Lecture 3 - Single Responsibility & argument counts"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 7, "Error Handling", 103, 114) {{ setCompleted(true); setNotes("Required reading for Project 1"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 10, "Classes & Cohesion", 135, 152) {{ setCompleted(false); setNotes("Midterm review topic"); }});
+                addChapterHelper(cs, saved.getId(), 1, "Clean Code Overview", 1, 14, true, "Lecture 1 - Introduction & Bad Code Costs");
+                addChapterHelper(cs, saved.getId(), 2, "Meaningful Names", 17, 36, true, "Lecture 2 - Intent-revealing names & abstractions");
+                addChapterHelper(cs, saved.getId(), 3, "Functions", 37, 64, true, "Lecture 3 - Single Responsibility & argument counts");
+                addChapterHelper(cs, saved.getId(), 7, "Error Handling", 103, 114, true, "Required reading for Project 1");
+                addChapterHelper(cs, saved.getId(), 10, "Classes & Cohesion", 135, 152, false, "Midterm review topic");
             } else if (saved.getTitle().contains("Pragmatic")) {
                 ChapterService cs = bookService.getChapterService();
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 1, "A Pragmatic Philosophy", 1, 34) {{ setCompleted(true); setNotes("Discussion Topic: Software entropy & stone soup"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 2, "A Pragmatic Approach", 35, 78) {{ setCompleted(true); setNotes("DRY & Orthogonality principles"); }});
-                cs.addChapter(new com.librarymanager.model.Chapter(saved.getId(), 4, "Pragmatic Paranoia", 115, 148) {{ setCompleted(false); setNotes("Design by Contract & Assertions"); }});
+                addChapterHelper(cs, saved.getId(), 1, "A Pragmatic Philosophy", 1, 34, true, "Discussion Topic: Software entropy & stone soup");
+                addChapterHelper(cs, saved.getId(), 2, "A Pragmatic Approach", 35, 78, true, "DRY & Orthogonality principles");
+                addChapterHelper(cs, saved.getId(), 4, "Pragmatic Paranoia", 115, 148, false, "Design by Contract & Assertions");
             }
         }
         return samples.size();
+    }
+
+    private void addChapterHelper(ChapterService cs, long bookId, int chapterNum, String title, int start, int end, boolean completed, String notes) {
+        Chapter c = new Chapter(bookId, chapterNum, title, start, end);
+        c.setCompleted(completed);
+        c.setNotes(notes);
+        cs.addChapter(c);
     }
 }

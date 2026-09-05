@@ -103,7 +103,8 @@ public class I18n {
         for (Consumer<Locale> listener : localeChangeListeners) {
             try {
                 listener.accept(newLocale);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error executing locale change listener", e);
             }
         }
     }

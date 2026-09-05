@@ -18,11 +18,14 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Controller and dialog view for adding and editing books with live validation, i18n & RTL.
  */
 public class BookFormController {
+    private static final Logger LOGGER = Logger.getLogger(BookFormController.class.getName());
 
     private final MainController mainController;
     private final BookService bookService;
@@ -340,7 +343,7 @@ public class BookFormController {
             int total = 0;
             try {
                 total = Integer.parseInt(totalPagesField.getText().trim());
-            } catch (Exception ignored) {
+            } catch (NumberFormatException ignored) {
             }
 
             if (current < 0) {
@@ -397,6 +400,7 @@ public class BookFormController {
             mainController.refreshActiveViews();
             dialogStage.close();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to save book", e);
             mainController.showToast("Error: " + e.getMessage(), ToastNotification.ToastType.ERROR);
         }
     }

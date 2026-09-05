@@ -18,12 +18,15 @@ import javafx.scene.shape.SVGPath;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Controller for Settings screen managing language (English/Arabic), theme preferences,
  * confirmation rules, database info, backup & restore, and sample data.
  */
 public class SettingsController {
+    private static final Logger LOGGER = Logger.getLogger(SettingsController.class.getName());
 
     private final MainController mainController;
     private final SettingsService settingsService;
@@ -261,6 +264,7 @@ public class SettingsController {
                 backupService.exportBackup(target);
                 mainController.showToast(I18n.get("toast.backup_success"), ToastNotification.ToastType.SUCCESS);
             } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to export database backup", ex);
                 DialogUtil.showError(mainController.getPrimaryStage(), "Backup Failed", "Could not export database backup: " + ex.getMessage());
             }
         }
@@ -279,6 +283,7 @@ public class SettingsController {
                 refreshInfo();
                 mainController.refreshActiveViews();
             } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to restore database backup", ex);
                 DialogUtil.showError(mainController.getPrimaryStage(), "Restore Failed", "Could not restore database: " + ex.getMessage());
             }
         }
@@ -292,6 +297,7 @@ public class SettingsController {
                 refreshInfo();
                 mainController.refreshActiveViews();
             } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to reset library database", ex);
                 DialogUtil.showError(mainController.getPrimaryStage(), "Reset Failed", "Could not reset library: " + ex.getMessage());
             }
         }

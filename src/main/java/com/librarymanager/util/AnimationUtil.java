@@ -94,7 +94,10 @@ public class AnimationUtil {
             int currentVal = 0;
             String text = label.getText();
             if (text != null && !text.isEmpty()) {
-                currentVal = Integer.parseInt(text.replaceAll("[^0-9]", ""));
+                String digits = text.replaceAll("[^0-9]", "");
+                if (!digits.isEmpty()) {
+                    currentVal = Integer.parseInt(digits);
+                }
             }
             int startVal = currentVal;
             int diff = targetValue - startVal;

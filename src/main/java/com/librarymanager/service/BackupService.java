@@ -5,6 +5,7 @@ import com.librarymanager.database.DatabaseManager;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Locale;
 
 /**
  * Service managing SQLite database backup, export, restore, and validation.
@@ -45,9 +46,9 @@ public class BackupService {
         }
         double kb = bytes / 1024.0;
         if (kb < 1024) {
-            return String.format("%.1f KB", kb);
+            return String.format(Locale.US, "%.1f KB", kb);
         }
         double mb = kb / 1024.0;
-        return String.format("%.2f MB", mb);
+        return String.format(Locale.US, "%.2f MB", mb);
     }
 }

@@ -7,11 +7,14 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Main JavaFX Application entry point.
  */
 public class Main extends Application {
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
     private static final int MIN_WIDTH = 980;
     private static final int MIN_HEIGHT = 680;
@@ -29,7 +32,8 @@ public class Main extends Application {
             if (is != null) {
                 primaryStage.getIcons().add(new Image(is));
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Application icon not available or failed to load", e);
         }
 
         MainController rootController = new MainController(primaryStage);

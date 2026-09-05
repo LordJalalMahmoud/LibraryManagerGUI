@@ -15,10 +15,14 @@ import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Modal dialog controller for adding and editing course chapter assignments.
  */
 public class ChapterFormController {
+    private static final Logger LOGGER = Logger.getLogger(ChapterFormController.class.getName());
 
     private final MainController mainController;
     private final ChapterService chapterService;
@@ -201,14 +205,14 @@ public class ChapterFormController {
         int chNum = 1;
         try {
             chNum = Integer.parseInt(numberField.getText().trim());
-        } catch (Exception ignored) {
+        } catch (NumberFormatException ignored) {
         }
 
         int startPage = 0;
         if (startPageField.getText() != null && !startPageField.getText().trim().isEmpty()) {
             try {
                 startPage = Integer.parseInt(startPageField.getText().trim());
-            } catch (Exception e) {
+            } catch (NumberFormatException e) {
                 pageError.setText(I18n.get("form.error.integer"));
                 pageError.setVisible(true);
                 pageError.setManaged(true);
@@ -220,7 +224,7 @@ public class ChapterFormController {
         if (endPageField.getText() != null && !endPageField.getText().trim().isEmpty()) {
             try {
                 endPage = Integer.parseInt(endPageField.getText().trim());
-            } catch (Exception e) {
+            } catch (NumberFormatException e) {
                 pageError.setText(I18n.get("form.error.integer"));
                 pageError.setVisible(true);
                 pageError.setManaged(true);
@@ -257,6 +261,7 @@ public class ChapterFormController {
             if (onSuccess != null) onSuccess.run();
             dialogStage.close();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to save chapter", e);
             mainController.showToast("Error: " + e.getMessage(), ToastNotification.ToastType.ERROR);
         }
     }

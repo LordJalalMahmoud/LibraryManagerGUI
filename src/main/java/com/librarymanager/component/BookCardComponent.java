@@ -20,11 +20,15 @@ import javafx.scene.shape.SVGPath;
 import java.io.File;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Modern card representing a single book in the library grid, supporting i18n & RTL.
  */
 public class BookCardComponent extends VBox {
+    private static final Logger LOGGER = Logger.getLogger(BookCardComponent.class.getName());
+
     private final Book book;
     private final ProgressBar progressBar;
     private final Label progressTextLabel;
@@ -188,7 +192,8 @@ public class BookCardComponent extends VBox {
                     container.getChildren().add(imageView);
                     imageLoaded = true;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Failed to load cover image: " + book.getCoverImage(), e);
             }
         }
 
