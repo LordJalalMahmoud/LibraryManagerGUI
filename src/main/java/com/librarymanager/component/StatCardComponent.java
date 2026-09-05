@@ -3,6 +3,7 @@ package com.librarymanager.component;
 import com.librarymanager.util.AnimationUtil;
 import com.librarymanager.util.IconUtil;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
@@ -17,15 +18,16 @@ public class StatCardComponent extends VBox {
 
     public StatCardComponent(String title, String initialValue, String subtext, IconUtil.IconType iconType, String accentClass) {
         getStyleClass().addAll("stat-card", accentClass != null ? accentClass : "stat-accent-indigo");
+        setNodeOrientation(com.librarymanager.util.I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
         setPadding(new Insets(18, 20, 18, 20));
         setSpacing(10);
-        setAlignment(Pos.TOP_LEFT);
+        setAlignment(com.librarymanager.util.I18n.isRTL() ? Pos.TOP_RIGHT : Pos.TOP_LEFT);
         HBox.setHgrow(this, Priority.ALWAYS);
         setMinWidth(180);
 
         // Header with Title and Icon
         HBox topRow = new HBox();
-        topRow.setAlignment(Pos.CENTER_LEFT);
+        topRow.setAlignment(com.librarymanager.util.I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         topRow.setSpacing(10);
 
         Label titleLabel = new Label(title);
@@ -34,6 +36,8 @@ public class StatCardComponent extends VBox {
 
         StackPane iconContainer = new StackPane();
         iconContainer.getStyleClass().add("stat-icon-container");
+        iconContainer.setMinSize(36, 36);
+        iconContainer.setMaxSize(36, 36);
         SVGPath icon = IconUtil.createIcon(iconType, 16);
         icon.getStyleClass().add("stat-icon");
         iconContainer.getChildren().add(icon);

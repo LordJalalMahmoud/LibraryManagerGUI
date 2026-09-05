@@ -12,9 +12,29 @@ import java.util.Optional;
  */
 public class DialogUtil {
 
-    private static void applyOrientation(Dialog<?> dialog) {
+    private static void applyThemeAndOrientation(Dialog<?> dialog) {
         if (dialog != null && dialog.getDialogPane() != null) {
-            dialog.getDialogPane().setNodeOrientation(I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
+            DialogPane pane = dialog.getDialogPane();
+            pane.setNodeOrientation(I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
+            try {
+                pane.getStylesheets().clear();
+                String baseStyle = DialogUtil.class.getResource("/css/styles.css").toExternalForm();
+                String themeStyle = null;
+                if (dialog.getOwner() instanceof Stage stage && stage.getScene() != null) {
+                    for (String sheet : stage.getScene().getStylesheets()) {
+                        if (sheet.contains("theme-")) {
+                            themeStyle = sheet;
+                            break;
+                        }
+                    }
+                }
+                if (themeStyle == null) {
+                    themeStyle = DialogUtil.class.getResource("/css/theme-dark.css").toExternalForm();
+                }
+                pane.getStylesheets().addAll(themeStyle, baseStyle);
+                pane.getStyleClass().add("form-container");
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -22,7 +42,7 @@ public class DialogUtil {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.initOwner(owner);
         alert.initModality(Modality.WINDOW_MODAL);
-        applyOrientation(alert);
+        applyThemeAndOrientation(alert);
 
         alert.setTitle(I18n.get("dialog.confirm_delete.title"));
         alert.setHeaderText(I18n.get("dialog.confirm_delete.header", itemDescription));
@@ -40,7 +60,7 @@ public class DialogUtil {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.initOwner(owner);
         alert.initModality(Modality.WINDOW_MODAL);
-        applyOrientation(alert);
+        applyThemeAndOrientation(alert);
 
         alert.setTitle(I18n.get("dialog.reset.title"));
         alert.setHeaderText(I18n.get("dialog.reset.header"));
@@ -58,7 +78,7 @@ public class DialogUtil {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.initOwner(owner);
         alert.initModality(Modality.WINDOW_MODAL);
-        applyOrientation(alert);
+        applyThemeAndOrientation(alert);
 
         alert.setTitle(title);
         alert.setHeaderText(null);
@@ -70,7 +90,7 @@ public class DialogUtil {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.initOwner(owner);
         alert.initModality(Modality.WINDOW_MODAL);
-        applyOrientation(alert);
+        applyThemeAndOrientation(alert);
 
         alert.setTitle(title);
         alert.setHeaderText(null);

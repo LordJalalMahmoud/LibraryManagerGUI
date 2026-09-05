@@ -217,13 +217,16 @@ public class DashboardController {
         // Update Pie Chart
         ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
         if (stats.getReadingCount() > 0) {
-            pieData.add(new PieChart.Data(ReadingStatus.READING.getDisplayName() + " (" + stats.getReadingCount() + ")", stats.getReadingCount()));
+            PieChart.Data d = new PieChart.Data(ReadingStatus.READING.getDisplayName() + " (" + stats.getReadingCount() + ")", stats.getReadingCount());
+            pieData.add(d);
         }
         if (stats.getCompletedCount() > 0) {
-            pieData.add(new PieChart.Data(ReadingStatus.COMPLETED.getDisplayName() + " (" + stats.getCompletedCount() + ")", stats.getCompletedCount()));
+            PieChart.Data d = new PieChart.Data(ReadingStatus.COMPLETED.getDisplayName() + " (" + stats.getCompletedCount() + ")", stats.getCompletedCount());
+            pieData.add(d);
         }
         if (stats.getNotStartedCount() > 0) {
-            pieData.add(new PieChart.Data(ReadingStatus.NOT_STARTED.getDisplayName() + " (" + stats.getNotStartedCount() + ")", stats.getNotStartedCount()));
+            PieChart.Data d = new PieChart.Data(ReadingStatus.NOT_STARTED.getDisplayName() + " (" + stats.getNotStartedCount() + ")", stats.getNotStartedCount());
+            pieData.add(d);
         }
         statusPieChart.setData(pieData);
 
@@ -233,8 +236,9 @@ public class DashboardController {
         series.setName("Pages");
         int pagesRead = stats.getPagesRead();
         int pagesRemaining = Math.max(0, stats.getTotalPages() - pagesRead);
-        series.getData().add(new XYChart.Data<>(I18n.get("chart.pages_read"), pagesRead));
-        series.getData().add(new XYChart.Data<>(I18n.get("chart.pages_left"), pagesRemaining));
+        XYChart.Data<String, Number> readBar = new XYChart.Data<>(I18n.get("chart.pages_read"), pagesRead);
+        XYChart.Data<String, Number> leftBar = new XYChart.Data<>(I18n.get("chart.pages_left"), pagesRemaining);
+        series.getData().addAll(readBar, leftBar);
         progressBreakdownChart.getData().add(series);
 
         // Refresh Currently Reading Section
@@ -252,7 +256,8 @@ public class DashboardController {
                         book -> mainController.navigateToBookDetails(book),
                         book -> mainController.openBookFormDialog(book),
                         (comp, book) -> confirmAndDelete(book),
-                        book -> quickAdvance(book, 10)
+                        book -> quickAdvance(book, 10),
+                        this::toggleFavorite
                 );
                 currentlyReadingSection.getChildren().add(card);
             }
@@ -267,10 +272,19 @@ public class DashboardController {
                     book -> mainController.navigateToBookDetails(book),
                     book -> mainController.openBookFormDialog(book),
                     (comp, book) -> confirmAndDelete(book),
-                    book -> quickAdvance(book, 10)
+                    book -> quickAdvance(book, 10),
+                    this::toggleFavorite
             );
             recentBooksSection.getChildren().add(card);
         }
+    }
+
+    private void toggleFavorite(Book book) {
+        boolean newFav = !book.isFavorite();
+        bookService.toggleFavorite(book.getId(), newFav);
+        book.setFavorite(newFav);
+        mainController.showToast(newFav ? I18n.get("toast.favorite_added", book.getTitle()) : I18n.get("toast.favorite_removed", book.getTitle()), ToastNotification.ToastType.SUCCESS);
+        mainController.refreshActiveViews();
     }
 
     private void quickAdvance(Book book, int pages) {

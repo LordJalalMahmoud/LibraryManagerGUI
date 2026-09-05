@@ -108,11 +108,25 @@ public class LibraryController {
         searchField.setStyle("-fx-background-color: transparent; -fx-padding: 0; -fx-border-width: 0;");
         HBox.setHgrow(searchField, Priority.ALWAYS);
 
+        Button clearBtn = new Button();
+        SVGPath closeIcon = IconUtil.createIcon(IconUtil.IconType.CLOSE, 10);
+        closeIcon.getStyleClass().add("app-icon");
+        clearBtn.setGraphic(closeIcon);
+        clearBtn.setStyle("-fx-background-color: transparent; -fx-padding: 2 4 2 4; -fx-cursor: hand;");
+        clearBtn.setVisible(false);
+        clearBtn.setManaged(false);
+        clearBtn.setOnAction(e -> searchField.clear());
+
         searchDebounce = new PauseTransition(Duration.millis(200));
         searchDebounce.setOnFinished(e -> reloadBooks());
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> searchDebounce.playFromStart());
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            boolean hasText = newVal != null && !newVal.trim().isEmpty();
+            clearBtn.setVisible(hasText);
+            clearBtn.setManaged(hasText);
+            searchDebounce.playFromStart();
+        });
 
-        searchContainer.getChildren().addAll(searchIcon, searchField);
+        searchContainer.getChildren().addAll(searchIcon, searchField, clearBtn);
 
         // Category Filter Dropdown
         categoryComboBox = new ComboBox<>();

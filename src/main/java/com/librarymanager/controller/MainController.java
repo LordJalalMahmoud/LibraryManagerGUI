@@ -128,20 +128,24 @@ public class MainController extends BorderPane {
     }
 
     private VBox buildSidebar() {
-        VBox box = new VBox(4);
+        VBox box = new VBox(6);
         box.getStyleClass().add("sidebar");
         box.setPrefWidth(240);
         box.setMinWidth(220);
         box.setMaxWidth(260);
+        box.setPadding(new Insets(0, 12, 0, 12));
 
         // Brand Box
         HBox brand = new HBox(12);
         brand.getStyleClass().add("brand-box");
         brand.setAlignment(Pos.CENTER_LEFT);
 
-        SVGPath logoIcon = IconUtil.createIcon(IconUtil.IconType.LIBRARY, 26);
+        StackPane brandIconBox = new StackPane();
+        brandIconBox.getStyleClass().add("brand-icon-box");
+        SVGPath logoIcon = IconUtil.createIcon(IconUtil.IconType.LIBRARY, 20);
         logoIcon.getStyleClass().add("app-icon");
         logoIcon.setStyle("-fx-fill: -accent-primary;");
+        brandIconBox.getChildren().add(logoIcon);
 
         VBox brandText = new VBox(2);
         brandTitleLabel = new Label(I18n.get("app.name"));
@@ -151,7 +155,7 @@ public class MainController extends BorderPane {
         brandSubtitleLabel.getStyleClass().add("brand-subtitle");
 
         brandText.getChildren().addAll(brandTitleLabel, brandSubtitleLabel);
-        brand.getChildren().addAll(logoIcon, brandText);
+        brand.getChildren().addAll(brandIconBox, brandText);
 
         box.getChildren().add(brand);
 

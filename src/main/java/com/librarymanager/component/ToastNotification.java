@@ -5,6 +5,7 @@ import com.librarymanager.util.IconUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -66,6 +67,7 @@ public class ToastNotification extends HBox {
         setPadding(new Insets(12, 18, 12, 16));
         setMaxWidth(380);
         setMinWidth(260);
+        setNodeOrientation(com.librarymanager.util.I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
 
         getStyleClass().addAll("toast-card", type.getStyleClass());
 

@@ -69,14 +69,14 @@ public class BookCardComponent extends VBox {
         favBtn.getStyleClass().addAll("btn", "btn-icon", "btn-sm");
         SVGPath favIcon = IconUtil.createIcon(IconUtil.IconType.HEART, 14);
         if (book.isFavorite()) {
-            favIcon.setStyle("-fx-fill: #ef4444;");
+            favIcon.setStyle("-fx-fill: #f43f5e;");
             favBtn.setTooltip(new Tooltip(I18n.get("book.favorite.remove_tooltip")));
         } else {
-            favIcon.setStyle("-fx-fill: rgba(255,255,255,0.7);");
+            favIcon.setStyle("-fx-fill: rgba(255,255,255,0.75);");
             favBtn.setTooltip(new Tooltip(I18n.get("book.favorite.tooltip")));
         }
         favBtn.setGraphic(favIcon);
-        favBtn.setStyle("-fx-background-color: rgba(0, 0, 0, 0.45); -fx-background-radius: 50%; -fx-min-width: 28px; -fx-min-height: 28px; -fx-max-width: 28px; -fx-max-height: 28px; -fx-cursor: hand; -fx-padding: 0;");
+        favBtn.setStyle("-fx-background-color: rgba(15, 23, 42, 0.55); -fx-background-radius: 50%; -fx-min-width: 30px; -fx-min-height: 30px; -fx-max-width: 30px; -fx-max-height: 30px; -fx-cursor: hand; -fx-padding: 0;");
         StackPane.setAlignment(favBtn, I18n.isRTL() ? Pos.TOP_LEFT : Pos.TOP_RIGHT);
         StackPane.setMargin(favBtn, new Insets(8));
         favBtn.setOnAction(e -> {
@@ -97,7 +97,7 @@ public class BookCardComponent extends VBox {
 
         if (book.getCategory() != null && !book.getCategory().trim().isEmpty()) {
             Label catBadge = new Label(book.getCategory().trim());
-            catBadge.setStyle("-fx-background-color: -surface-border; -fx-text-fill: -text-main; -fx-font-size: 10px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 12px;");
+            catBadge.getStyleClass().add("meta-chip");
             badgeRow.getChildren().add(catBadge);
         }
 
@@ -110,7 +110,7 @@ public class BookCardComponent extends VBox {
 
         if (book.hasChapters()) {
             Label chapterBadge = new Label(I18n.get("chapters.badge", book.getCompletedChaptersCount(), book.getTotalChaptersCount()));
-            chapterBadge.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 10px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 12px;");
+            chapterBadge.getStyleClass().add("chapter-badge");
             badgeRow.getChildren().add(chapterBadge);
         }
 
@@ -133,7 +133,7 @@ public class BookCardComponent extends VBox {
             tagBox.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
             for (int i = 0; i < Math.min(3, tagList.size()); i++) {
                 Label tagChip = new Label("#" + tagList.get(i));
-                tagChip.setStyle("-fx-font-size: 10px; -fx-text-fill: -accent-primary; -fx-background-color: -accent-subtle; -fx-padding: 2 6 2 6; -fx-background-radius: 6px;");
+                tagChip.getStyleClass().add("tag-chip");
                 tagBox.getChildren().add(tagChip);
             }
             if (tagList.size() > 3) {

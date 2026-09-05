@@ -186,19 +186,21 @@ public class BookDetailsController {
 
         if (book.getCategory() != null && !book.getCategory().trim().isEmpty()) {
             Label catBadge = new Label(book.getCategory().trim());
-            catBadge.setStyle("-fx-background-color: -surface-border; -fx-text-fill: -text-main; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            catBadge.getStyleClass().add("meta-chip");
             badgeRow.getChildren().add(catBadge);
         }
 
         if (book.isFavorite()) {
             Label favBadge = new Label("❤️ " + I18n.get("book.favorite"));
-            favBadge.setStyle("-fx-background-color: rgba(239, 68, 68, 0.15); -fx-text-fill: #ef4444; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            favBadge.getStyleClass().add("meta-chip");
+            favBadge.setStyle("-fx-text-fill: #f43f5e; -fx-background-color: rgba(244, 63, 94, 0.15);");
             badgeRow.getChildren().add(favBadge);
         }
 
         if (book.isWishlist()) {
             Label wishBadge = new Label("🌟 " + I18n.get("book.wishlist"));
-            wishBadge.setStyle("-fx-background-color: rgba(234, 179, 8, 0.15); -fx-text-fill: #eab308; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 12px;");
+            wishBadge.getStyleClass().add("meta-chip");
+            wishBadge.setStyle("-fx-text-fill: #eab308; -fx-background-color: rgba(234, 179, 8, 0.15);");
             badgeRow.getChildren().add(wishBadge);
         }
 
@@ -257,7 +259,7 @@ public class BookDetailsController {
             tagsFlow.setVgap(6);
             for (String tag : tags) {
                 Label chip = new Label("#" + tag);
-                chip.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 3 8 3 8; -fx-background-radius: 8px;");
+                chip.getStyleClass().add("tag-chip");
                 tagsFlow.getChildren().add(chip);
             }
             tagsBox.getChildren().addAll(tagsHeader, tagsFlow);
@@ -478,7 +480,7 @@ public class BookDetailsController {
 
         // Chapter number badge
         Label numBadge = new Label(I18n.get("chapters.number") + " " + chapter.getChapterNumber());
-        numBadge.setStyle("-fx-background-color: -bg-hover; -fx-text-fill: -text-main; -fx-font-weight: 700; -fx-font-size: 11px; -fx-padding: 3 8 3 8; -fx-background-radius: 6px;");
+        numBadge.getStyleClass().add("meta-chip");
 
         // Chapter title
         Label title = new Label(chapter.getTitle());
@@ -489,14 +491,13 @@ public class BookDetailsController {
         HBox.setHgrow(title, Priority.ALWAYS);
 
         // Page Range badge if available
+        Label pageBadge = null;
         if (chapter.getStartPage() > 0 && chapter.getEndPage() >= chapter.getStartPage()) {
-            Label pageBadge = new Label(I18n.get("chapters.pages_range", chapter.getStartPage(), chapter.getEndPage()));
-            pageBadge.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 6px;");
-            row.getChildren().add(pageBadge);
+            pageBadge = new Label(I18n.get("chapters.pages_range", chapter.getStartPage(), chapter.getEndPage()));
+            pageBadge.getStyleClass().add("tag-chip");
         } else if (chapter.getStartPage() > 0) {
-            Label pageBadge = new Label(I18n.get("chapters.page_single", chapter.getStartPage()));
-            pageBadge.setStyle("-fx-background-color: -accent-subtle; -fx-text-fill: -accent-primary; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 2 7 2 7; -fx-background-radius: 6px;");
-            row.getChildren().add(pageBadge);
+            pageBadge = new Label(I18n.get("chapters.page_single", chapter.getStartPage()));
+            pageBadge.getStyleClass().add("tag-chip");
         }
 
         // Notes tooltip if available
@@ -521,7 +522,11 @@ public class BookDetailsController {
         HBox actions = new HBox(6, editBtn, deleteBtn);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
-        row.getChildren().addAll(checkBox, numBadge, title, actions);
+        row.getChildren().addAll(checkBox, numBadge, title);
+        if (pageBadge != null) {
+            row.getChildren().add(pageBadge);
+        }
+        row.getChildren().add(actions);
         AnimationUtil.addCardHover(row);
         return row;
     }
@@ -649,7 +654,7 @@ public class BookDetailsController {
             VBox fallback = new VBox(14);
             fallback.setAlignment(Pos.CENTER);
             fallback.setPadding(new Insets(24));
-            fallback.getStyleClass().addAll("book-cover-placeholder", "cover-gradient-2");
+            fallback.getStyleClass().addAll("book-cover-placeholder", getCoverGradientClass(book.getTitle()));
             fallback.setPrefHeight(280);
 
             SVGPath bookIcon = IconUtil.createIcon(IconUtil.IconType.PAGES, 48);
@@ -670,6 +675,12 @@ public class BookDetailsController {
         }
 
         return container;
+    }
+
+    private String getCoverGradientClass(String title) {
+        if (title == null || title.isEmpty()) return "cover-gradient-1";
+        int hash = Math.abs(title.hashCode()) % 5;
+        return "cover-gradient-" + (hash + 1);
     }
 
     private void handleDelete() {

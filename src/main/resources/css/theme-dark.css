@@ -1,31 +1,76 @@
 /* Dark Theme Palette */
 .root {
-    -bg-main: #0b0f17;
-    -bg-sidebar: #0f172a;
-    -bg-card: #141e33;
-    -bg-hover: #1e293b;
+    /* Surfaces */
+    -bg-main: #0a0e17;
+    -bg-sidebar: #0f1523;
+    -bg-card: #131b2e;
+    -bg-card-elevated: #1a253c;
+    -bg-hover: #1e2c47;
+    -bg-active: #243555;
+    -bg-input: #101726;
     -bg-progress-track: #1e293b;
+    -surface-border: #1e293b;
 
+    /* Text */
     -text-main: #f8fafc;
+    -text-secondary: #cbd5e1;
     -text-muted: #94a3b8;
+    -text-subtle: #64748b;
 
+    /* Borders */
     -border-subtle: #1e293b;
     -border-hover: #334155;
+    -border-focus: #6366f1;
+    -border-strong: #475569;
 
+    /* Brand Accent */
     -accent-primary: #6366f1;
     -accent-hover: #4f46e5;
-    -accent-subtle: rgba(99, 102, 241, 0.15);
-    -accent-glow: rgba(99, 102, 241, 0.35);
+    -accent-subtle: rgba(99, 102, 241, 0.18);
+    -accent-glow: rgba(99, 102, 241, 0.38);
+    -accent-gradient: linear-gradient(to right, #6366f1, #8b5cf6);
 
-    -badge-notstarted-bg: #1e293b;
+    /* Badges */
+    -badge-notstarted-bg: rgba(148, 163, 184, 0.14);
     -badge-notstarted-text: #94a3b8;
+    -badge-notstarted-border: rgba(148, 163, 184, 0.25);
 
-    -badge-reading-bg: rgba(59, 130, 246, 0.2);
-    -badge-reading-text: #60a5fa;
+    -badge-reading-bg: rgba(56, 189, 248, 0.16);
+    -badge-reading-text: #38bdf8;
+    -badge-reading-border: rgba(56, 189, 248, 0.3);
 
-    -badge-completed-bg: rgba(16, 185, 129, 0.2);
+    -badge-completed-bg: rgba(52, 211, 153, 0.16);
     -badge-completed-text: #34d399;
+    -badge-completed-border: rgba(52, 211, 153, 0.3);
 
+    -badge-fav-bg: rgba(244, 63, 94, 0.16);
+    -badge-fav-text: #fb7185;
+
+    -badge-wish-bg: rgba(251, 191, 36, 0.16);
+    -badge-wish-text: #fbbf24;
+
+    /* Stat Card Accents */
+    -stat-indigo-bg: rgba(99, 102, 241, 0.16);
+    -stat-indigo-icon: #818cf8;
+
+    -stat-blue-bg: rgba(14, 165, 233, 0.16);
+    -stat-blue-icon: #38bdf8;
+
+    -stat-emerald-bg: rgba(16, 185, 129, 0.16);
+    -stat-emerald-icon: #34d399;
+
+    -stat-amber-bg: rgba(245, 158, 11, 0.16);
+    -stat-amber-icon: #fbbf24;
+
+    -stat-purple-bg: rgba(168, 85, 247, 0.16);
+    -stat-purple-icon: #c084fc;
+
+    /* Shadows */
+    -shadow-card: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 14, 0, 0, 4);
+    -shadow-card-hover: dropshadow(gaussian, rgba(99, 102, 241, 0.25), 20, 0, 0, 6);
+    -shadow-popup: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 24, 0, 0, 8);
+
+    /* Scrollbars */
     -scrollbar-thumb: #334155;
     -scrollbar-thumb-hover: #475569;
 }
