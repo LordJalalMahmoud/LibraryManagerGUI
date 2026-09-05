@@ -1,0 +1,103 @@
+name: Native Packaging
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package-linux:
+    name: Package Linux (.deb & Portable)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Fat JAR
+        run: mvn --batch-mode --no-transfer-progress clean package -DskipTests=true
+
+      - name: Make packaging script executable
+        run: chmod +x package-native.sh
+
+      - name: Build Native Linux Packages
+        run: ./package-native.sh all
+
+      - name: Upload Linux Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: LibraryManager-Linux-Packages
+          path: |
+            target/dist/*.deb
+            target/dist/*.tar.gz
+
+  package-windows:
+    name: Package Windows (.msi & Standalone)
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Fat JAR
+        run: mvn --batch-mode --no-transfer-progress clean package -DskipTests=true
+
+      - name: Build Native Windows Packages (jpackage)
+        shell: bash
+        run: |
+          mkdir -p target/package-input target/dist
+          cp target/library-manager-1.0.0.jar target/package-input/
+          jpackage \
+            --type app-image \
+            --name LibraryManager \
+            --app-version 1.0.0 \
+            --vendor LibraryManager \
+            --description "Modern Personal Library Management Desktop Application" \
+            --input target/package-input \
+            --main-jar library-manager-1.0.0.jar \
+            --main-class com.librarymanager.Launcher \
+            --dest target/dist \
+            --java-options "-Dfile.encoding=UTF-8" \
+            --add-modules java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
+          
+          jpackage \
+            --type msi \
+            --name LibraryManager \
+            --app-version 1.0.0 \
+            --vendor LibraryManager \
+            --description "Modern Personal Library Management Desktop Application" \
+            --input target/package-input \
+            --main-jar library-manager-1.0.0.jar \
+            --main-class com.librarymanager.Launcher \
+            --dest target/dist \
+            --win-dir-chooser \
+            --win-menu \
+            --win-shortcut \
+            --java-options "-Dfile.encoding=UTF-8" \
+            --add-modules java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
+
+          cd target/dist
+          7z a LibraryManager-1.0.0-windows-x64.zip LibraryManager
+
+      - name: Upload Windows Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: LibraryManager-Windows-Packages
+          path: |
+            target/dist/*.msi
+            target/dist/*.zip

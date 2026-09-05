@@ -174,6 +174,56 @@ This repository includes an automated GitHub Actions pipeline configured in `.gi
 
 ---
 
+## Native Desktop Packaging (No Java Required for End-Users)
+
+The application supports native, self-contained packaging using JDK 21's `jpackage`. It bundles a minimal custom Java Runtime Environment (JRE) so end-users can run or install the application **without needing Java installed on their machine**.
+
+### 1. Fast Native Packaging Script (Linux)
+```bash
+# Build all native packages (.deb installer, standalone app-image, and .tar.gz)
+./package-native.sh all
+
+# Or package specific formats:
+./package-native.sh deb        # Creates native Debian/Ubuntu installer (.deb)
+./package-native.sh app-image  # Creates standalone directory with binary executable
+./package-native.sh tar        # Creates compressed portable tarball (.tar.gz)
+```
+
+### 2. Via Maven Profiles
+```bash
+# Build standalone native app-image directory
+mvn package -Pnative-app-image -DskipTests=true
+
+# Build native Debian package (.deb)
+mvn package -Pnative-deb -DskipTests=true
+
+# Build all native distribution formats
+mvn package -Pnative-all -DskipTests=true
+```
+
+### 3. Installing and Running Generated Packages
+- **Debian / Ubuntu (.deb installer)**:
+  ```bash
+  sudo dpkg -i target/dist/library-manager_1.0.0_amd64.deb
+  # Or:
+  sudo apt install ./target/dist/library-manager_1.0.0_amd64.deb
+  ```
+  *Registers `LibraryManager` in your desktop Application Menu, sets up desktop shortcuts, and links the application icon automatically.*
+
+- **Portable Standalone Image**:
+  ```bash
+  ./target/dist/LibraryManager/bin/LibraryManager
+  ```
+
+### 4. Windows Native Installer (.msi)
+For Windows systems, run:
+```cmd
+package-native.bat
+```
+*(Also automated via the `.github/workflows/native-package.yml` GitHub Actions workflow).*
+
+---
+
 ## Cross-Platform Storage
 The SQLite database file is stored automatically in the user's home directory:
 - **Linux/macOS**: `~/.librarymanager/library.db`
