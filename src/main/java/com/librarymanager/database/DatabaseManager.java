@@ -129,6 +129,20 @@ public class DatabaseManager {
             );
             """;
 
+        String createSessionsTable = """
+            CREATE TABLE IF NOT EXISTS reading_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_id INTEGER NOT NULL,
+                session_date TEXT NOT NULL,
+                start_page INTEGER NOT NULL DEFAULT 0,
+                end_page INTEGER NOT NULL DEFAULT 0,
+                pages_read INTEGER NOT NULL DEFAULT 0,
+                duration_minutes INTEGER NOT NULL DEFAULT 0,
+                notes TEXT,
+                FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+            );
+            """;
+
         String createIndexes = """
             CREATE INDEX IF NOT EXISTS idx_books_status ON books(status);
             CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
@@ -139,6 +153,8 @@ public class DatabaseManager {
             CREATE INDEX IF NOT EXISTS idx_books_is_wishlist ON books(is_wishlist);
             CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
             CREATE INDEX IF NOT EXISTS idx_chapters_book_id ON chapters(book_id);
+            CREATE INDEX IF NOT EXISTS idx_sessions_book_id ON reading_sessions(book_id);
+            CREATE INDEX IF NOT EXISTS idx_sessions_date ON reading_sessions(session_date);
             """;
 
         try (Connection conn = getConnection();
@@ -146,6 +162,7 @@ public class DatabaseManager {
             stmt.execute("PRAGMA foreign_keys = ON;");
             stmt.execute(createBooksTable);
             stmt.execute(createChaptersTable);
+            stmt.execute(createSessionsTable);
             stmt.execute(createSettingsTable);
             migrateSchema(conn);
             stmt.execute(createIndexes);
@@ -157,6 +174,27 @@ public class DatabaseManager {
     }
 
     private void migrateSchema(Connection conn) {
+        String createSessionsTableIfMissing = """
+            CREATE TABLE IF NOT EXISTS reading_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_id INTEGER NOT NULL,
+                session_date TEXT NOT NULL,
+                start_page INTEGER NOT NULL DEFAULT 0,
+                end_page INTEGER NOT NULL DEFAULT 0,
+                pages_read INTEGER NOT NULL DEFAULT 0,
+                duration_minutes INTEGER NOT NULL DEFAULT 0,
+                notes TEXT,
+                FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+            );
+            """;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(createSessionsTableIfMissing);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_sessions_book_id ON reading_sessions(book_id);");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_sessions_date ON reading_sessions(session_date);");
+        } catch (SQLException e) {
+            LOGGER.log(Level.FINE, "Session table migration note: " + e.getMessage());
+        }
+
         String[] alterStatements = {
             "ALTER TABLE books ADD COLUMN category TEXT;",
             "ALTER TABLE books ADD COLUMN publisher TEXT;",
@@ -221,6 +259,10 @@ public class DatabaseManager {
     public void resetAllData() throws SQLException {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM reading_sessions;");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='reading_sessions';");
+            stmt.execute("DELETE FROM chapters;");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='chapters';");
             stmt.execute("DELETE FROM books;");
             stmt.execute("DELETE FROM sqlite_sequence WHERE name='books';");
             stmt.execute("VACUUM;");

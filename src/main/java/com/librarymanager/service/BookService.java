@@ -16,22 +16,32 @@ import java.util.Optional;
 public class BookService {
     private final BookDao bookDao;
     private final ChapterService chapterService;
+    private final ReadingTrackerService readingTrackerService;
 
     public BookService() {
-        this(new SqliteBookDao(), new ChapterService());
+        this(new SqliteBookDao(), new ChapterService(), new ReadingTrackerService());
     }
 
     public BookService(BookDao bookDao) {
-        this(bookDao, new ChapterService());
+        this(bookDao, new ChapterService(), new ReadingTrackerService());
     }
 
     public BookService(BookDao bookDao, ChapterService chapterService) {
+        this(bookDao, chapterService, new ReadingTrackerService());
+    }
+
+    public BookService(BookDao bookDao, ChapterService chapterService, ReadingTrackerService readingTrackerService) {
         this.bookDao = bookDao;
         this.chapterService = chapterService;
+        this.readingTrackerService = readingTrackerService;
     }
 
     public ChapterService getChapterService() {
         return chapterService;
+    }
+
+    public ReadingTrackerService getReadingTrackerService() {
+        return readingTrackerService;
     }
 
     /**

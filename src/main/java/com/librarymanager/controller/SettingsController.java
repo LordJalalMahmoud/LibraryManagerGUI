@@ -142,7 +142,56 @@ public class SettingsController {
         prefsCard.getChildren().add(confirmDeleteCheck);
         contentBox.getChildren().add(prefsCard);
 
-        // 4. Database Information Section
+        // 4. Reading Goals & Targets Section (v1.2)
+        com.librarymanager.service.ReadingTrackerService trackerService = bookService.getReadingTrackerService();
+        com.librarymanager.model.ReadingGoal currentGoal = trackerService.getReadingGoal();
+
+        VBox goalsCard = createCard(I18n.get("settings.goals.title"), I18n.get("settings.goals.sub"));
+
+        GridPane goalsGrid = new GridPane();
+        goalsGrid.setHgap(20);
+        goalsGrid.setVgap(14);
+
+        // Daily Pages
+        Label dailyLabel = createLabel(I18n.get("settings.goals.daily_pages"));
+        Spinner<Integer> dailySpinner = new Spinner<>(1, 500, currentGoal.getDailyPagesGoal());
+        dailySpinner.setEditable(true);
+        dailySpinner.setPrefWidth(120);
+        Label dailySub = new Label(I18n.get("settings.goals.daily_pages_sub"));
+        dailySub.setStyle("-fx-font-size: 11px; -fx-text-fill: -text-muted;");
+        VBox dailyCol = new VBox(4, dailySpinner, dailySub);
+
+        goalsGrid.add(dailyLabel, 0, 0);
+        goalsGrid.add(dailyCol, 1, 0);
+
+        // Yearly Books
+        Label yearlyLabel = createLabel(I18n.get("settings.goals.yearly_books"));
+        Spinner<Integer> yearlySpinner = new Spinner<>(1, 365, currentGoal.getYearlyBooksGoal());
+        yearlySpinner.setEditable(true);
+        yearlySpinner.setPrefWidth(120);
+        Label yearlySub = new Label(I18n.get("settings.goals.yearly_books_sub", String.valueOf(java.time.LocalDate.now().getYear())));
+        yearlySub.setStyle("-fx-font-size: 11px; -fx-text-fill: -text-muted;");
+        VBox yearlyCol = new VBox(4, yearlySpinner, yearlySub);
+
+        goalsGrid.add(yearlyLabel, 0, 1);
+        goalsGrid.add(yearlyCol, 1, 1);
+
+        Button saveGoalsBtn = new Button(I18n.get("settings.goals.save"));
+        saveGoalsBtn.getStyleClass().addAll("btn", "btn-primary");
+        saveGoalsBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.CHECK, 14));
+        saveGoalsBtn.setGraphicTextGap(8);
+        saveGoalsBtn.setOnAction(e -> {
+            int daily = dailySpinner.getValue();
+            int yearly = yearlySpinner.getValue();
+            trackerService.setGoals(daily, yearly);
+            mainController.showToast(I18n.get("toast.goals_updated"), ToastNotification.ToastType.SUCCESS);
+            mainController.refreshActiveViews();
+        });
+
+        goalsCard.getChildren().addAll(goalsGrid, saveGoalsBtn);
+        contentBox.getChildren().add(goalsCard);
+
+        // 5. Database Information Section
         VBox dbCard = createCard(I18n.get("settings.db.title"), I18n.get("settings.db.sub"));
         GridPane dbGrid = new GridPane();
         dbGrid.setHgap(16);

@@ -11,4 +11,6 @@ public interface SettingsDao {
     String getOrDefault(String key, String defaultValue);
     boolean getBoolean(String key, boolean defaultValue);
     void setBoolean(String key, boolean value);
+    int getInt(String key, int defaultValue);
+    void setInt(String key, int value);
 }

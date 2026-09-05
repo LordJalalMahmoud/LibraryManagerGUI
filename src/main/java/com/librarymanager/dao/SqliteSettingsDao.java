@@ -74,4 +74,20 @@ public class SqliteSettingsDao implements SettingsDao {
     public void setBoolean(String key, boolean value) {
         set(key, Boolean.toString(value));
     }
+
+    @Override
+    public int getInt(String key, int defaultValue) {
+        return get(key).map(val -> {
+            try {
+                return Integer.parseInt(val);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }).orElse(defaultValue);
+    }
+
+    @Override
+    public void setInt(String key, int value) {
+        set(key, Integer.toString(value));
+    }
 }

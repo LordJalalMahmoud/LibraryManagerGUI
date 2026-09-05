@@ -263,6 +263,20 @@
     -fx-fill: -stat-purple-icon;
 }
 
+.stat-accent-rose .stat-icon-container {
+    -fx-background-color: rgba(244, 63, 94, 0.15);
+}
+.stat-accent-rose .stat-icon {
+    -fx-fill: #f43f5e;
+}
+
+.stat-accent-teal .stat-icon-container {
+    -fx-background-color: rgba(20, 184, 166, 0.15);
+}
+.stat-accent-teal .stat-icon {
+    -fx-fill: #14b8a6;
+}
+
 /* Book Cards */
 .book-card {
     -fx-background-color: -bg-card;

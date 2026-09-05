@@ -139,8 +139,26 @@ public class SampleDataService {
                 addChapterHelper(cs, saved.getId(), 2, "A Pragmatic Approach", 35, 78, true, "DRY & Orthogonality principles");
                 addChapterHelper(cs, saved.getId(), 4, "Pragmatic Paranoia", 115, 148, false, "Design by Contract & Assertions");
             }
+
+            // Add realistic reading sessions for streak and goal tracking
+            ReadingTrackerService rts = bookService.getReadingTrackerService();
+            if (saved.getTitle().contains("Clean Code")) {
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(4), 1, 40, 40, 45, "Read intro chapters & meaning of clean code");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(3), 41, 100, 60, 60, "Deep dive into meaningful names & functions");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(2), 101, 180, 80, 75, "Comments and formatting conventions");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(1), 181, 260, 80, 70, "Objects, data structures & error handling");
+                addSessionHelper(rts, saved.getId(), LocalDate.now(), 261, 334, 74, 65, "Clean classes & cohesive modules");
+            } else if (saved.getTitle().contains("Designing Data-Intensive")) {
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(2), 1, 120, 120, 90, "Reliability, scalability, and data models");
+                addSessionHelper(rts, saved.getId(), LocalDate.now(), 121, 260, 140, 80, "Storage engines & transaction boundaries");
+            }
         }
         return samples.size();
+    }
+
+    private void addSessionHelper(ReadingTrackerService rts, long bookId, LocalDate date, int start, int end, int pages, int duration, String notes) {
+        com.librarymanager.model.ReadingSession session = new com.librarymanager.model.ReadingSession(bookId, date, start, end, pages, duration, notes);
+        rts.logSession(session);
     }
 
     private void addChapterHelper(ChapterService cs, long bookId, int chapterNum, String title, int start, int end, boolean completed, String notes) {

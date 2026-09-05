@@ -8,7 +8,7 @@
 [![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://openjdk.org/projects/jdk/21/)
 [![JavaFX](https://img.shields.io/badge/JavaFX-21-blue.svg)](https://openjfx.io/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-lightgrey.svg)](https://www.sqlite.org/)
-[![Tests](https://img.shields.io/badge/Tests-28%20Passed%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-42%20Passed%20(100%25)-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 > A commercial-grade, cross-platform personal library and reading management system engineered with strict **N-Tier layered architecture (SOLID)**, **automated CI/CD pipelines**, **native self-contained OS packaging**, and **full Arabic (RTL) & English localization**.
@@ -17,7 +17,7 @@
   <img src="src/main/resources/icons/app-icon.png" alt="LibraryManager Icon" width="112" style="border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
 </p>
 
-| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (28 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🏷️ **Categories, Tags, Favorites & Wishlist** |
+| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (42 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🏷️ **Categories, Tags, Favorites & Wishlist** |
 | :---: | :---: | :---: | :---: |
 
 ---
@@ -38,24 +38,31 @@ Download production-ready native desktop packages that run **without requiring J
 
 | OS | Format | Direct Download | Description |
 | :--- | :--- | :--- | :--- |
-| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.1.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
-| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.1.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
-| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.1.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
-| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.1.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
+| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.2.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
+| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.2.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
+| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.2.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
+| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.2.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
 
 ---
 
 ## ✨ Key Features
 
-### 1. 📊 Real-Time Analytics Dashboard
+### 1. 📊 Real-Time Analytics Dashboard & Reading Tracker (v1.2)
+- **Reading Streak Counter**: Real-time streak tracking with flame indicators (`🔥`), today's reading status, and all-time personal best streak memory.
+- **Daily Average Velocity**: Automatic computation of average pages read per active reading day.
+- **Custom Reading Goals Widget**: Interactive progress tracking for daily page targets (e.g. 25 pages/day) and annual book challenges (e.g. 12 books/year) with celebration cues (`🎉`).
+- **Recent Activity Feed**: Centralized overview of the latest reading sessions logged across all books.
 - **Live Metric Cards**: Instant tracking of Total Books, Active Reads, Completed Reads, Backlog, and Overall Library Reading Percentage.
-- **Micro-Animations**: Smooth numerical roll-up counting transitions when data loads or updates.
 - **Interactive Visual Charts**:
   - **Reading Status Distribution**: High-resolution Pie Chart breakdown.
   - **Reading Progress Velocity**: Bar Chart comparing completed pages against remaining unread pages.
-- **Spotlight Widgets**: Fast access to "Currently Reading" books with instant `+10 pages` advancement and recently added titles.
 
-### 2. 🏷️ Multi-Dimensional Organization & Discovery
+### 2. ⏱️ Reading Sessions & Study Reflections (v1.2)
+- **Session Logging**: Record date, start page, end page, pages read count, duration in minutes, and personal key takeaways.
+- **Auto-Advancing Progress**: Automatically updates the book's current page and reading state (completing the book when target is reached).
+- **Session History & Auditing**: Chronological list of past reading sessions per book with delete and confirmation safety.
+
+### 3. 🏷️ Multi-Dimensional Organization & Discovery
 - **Categories & Publishers**: Organize by academic or genre classification (e.g. *Software Engineering*, *Programming*, *Architecture*) with category filter dropdown and publisher metadata.
 - **Tagging System**: Assign comma-separated tags (`#clean-code`, `#java`, `#architecture`) with elegant badge chips on cards and details.
 - **ISBN Cataloging**: International Standard Book Number support with format validation and instant ISBN search lookup.
@@ -104,11 +111,13 @@ graph TD
         LC --> BCC["BookCardComponent"]
         DC --> SCC["StatCardComponent"]
         BDC --> CFC["ChapterFormController"]
+        BDC --> SFC["SessionFormController"]
     end
 
     subgraph Service ["Business Logic Layer"]
         BS["BookService"]
         CS["ChapterService"]
+        RTS["ReadingTrackerService"]
         SS["SettingsService"]
         BK["BackupService"]
         SD["SampleDataService"]
@@ -117,6 +126,7 @@ graph TD
     subgraph DAO ["Data Access Layer (DAO Pattern)"]
         BD["BookDao / SqliteBookDao"]
         CD["ChapterDao / SqliteChapterDao"]
+        RSD["ReadingSessionDao / SqliteReadingSessionDao"]
         SDO["SettingsDao / SqliteSettingsDao"]
     end
 
@@ -132,10 +142,10 @@ graph TD
 ```
 
 ### Applied Design Patterns (GoF)
-- **DAO Pattern (Data Access Object)**: Decouples domain entities and services from raw SQL queries (`BookDao`, `ChapterDao`, `SettingsDao`).
+- **DAO Pattern (Data Access Object)**: Decouples domain entities and services from raw SQL queries (`BookDao`, `ChapterDao`, `ReadingSessionDao`, `SettingsDao`).
 - **Singleton Pattern**: Ensures single, thread-safe instances for `DatabaseManager` and localization engine (`I18n`).
 - **Factory / Component Pattern**: Custom reusable UI components (`BookCardComponent`, `StatCardComponent`) encapsulating FXML and animation lifecycle.
-- **State Pattern / Auto-Transitions**: Automated lifecycle transitions (`NOT_STARTED` ➔ `READING` ➔ `COMPLETED`) based on page and chapter progress formulas.
+- **State Pattern / Auto-Transitions**: Automated lifecycle transitions (`NOT_STARTED` ➔ `READING` ➔ `COMPLETED`) based on page, session, and chapter progress formulas.
 - **Observer Pattern**: Leverages JavaFX `ObservableList` and data bindings for reactive UI updates upon data mutations.
 
 ---
@@ -150,10 +160,12 @@ Comprehensive unit and integration testing suite utilizing **JUnit 5**, ensuring
 | [`BookDaoTest`](src/test/java/com/librarymanager/dao/BookDaoTest.java) | SQLite CRUD, category/tag/favorite persistence, multi-criteria search queries | 7 | ✅ Passed |
 | [`BookServiceTest`](src/test/java/com/librarymanager/service/BookServiceTest.java) | Business validation, ISBN checks, page boundaries, automated transitions | 6 | ✅ Passed |
 | [`ChapterServiceTest`](src/test/java/com/librarymanager/service/ChapterServiceTest.java) | Chapter completion ratios, page calculations, and book progress sync | 4 | ✅ Passed |
+| [`ReadingSessionDaoTest`](src/test/java/com/librarymanager/dao/ReadingSessionDaoTest.java) | Reading session persistence, date aggregations, cascading book deletions | 5 | ✅ Passed |
+| [`ReadingTrackerServiceTest`](src/test/java/com/librarymanager/service/ReadingTrackerServiceTest.java) | Streak algorithms (current & best), daily averages, goal tracking & milestones | 9 | ✅ Passed |
 | [`SettingsServiceTest`](src/test/java/com/librarymanager/service/SettingsServiceTest.java) | Theme preferences, safety dialog flags, and language persistence | 3 | ✅ Passed |
 | [`BackupServiceTest`](src/test/java/com/librarymanager/service/BackupServiceTest.java) | SQLite database file export, verification, and restore routines | 2 | ✅ Passed |
 | [`I18nTest`](src/test/java/com/librarymanager/util/I18nTest.java) | Bilingual bundle key parity, RTL layout resolution, parameter formatting | 3 | ✅ Passed |
-| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **28** | **✅ 100% Passed** |
+| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **42** | **✅ 100% Passed** |
 
 Execute all tests locally with:
 ```bash
@@ -173,9 +185,9 @@ Configured in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On every `
 
 ### 2. Multi-Platform Release Pipeline (`native-package.yml`)
 Configured in [`.github/workflows/native-package.yml`](.github/workflows/native-package.yml). When a release tag (`v*`) is pushed:
-- **Linux (`ubuntu-latest`)**: Builds `library-manager_1.1.0_amd64.deb` and portable `.tar.gz` via `jpackage`.
-- **Windows (`windows-latest`)**: Builds `LibraryManager-1.1.0-windows-x64.msi` installer and portable `.zip`.
-- **macOS (`macos-latest`)**: Builds `LibraryManager-1.1.0.dmg`, `.pkg`, and `LibraryManager.app`.
+- **Linux (`ubuntu-latest`)**: Builds `library-manager_1.2.0_amd64.deb` and portable `.tar.gz` via `jpackage`.
+- **Windows (`windows-latest`)**: Builds `LibraryManager-1.2.0-windows-x64.msi` installer and portable `.zip`.
+- **macOS (`macos-latest`)**: Builds `LibraryManager-1.2.0.dmg`, `.pkg`, and `LibraryManager.app`.
 - **Security Checksums**: Computes `SHA256SUMS.txt` for all compiled binaries.
 - **Production Publishing**: Automatically publishes the official release with all binaries attached.
 
@@ -187,12 +199,14 @@ Configured in [`.github/workflows/native-package.yml`](.github/workflows/native-
 - **JDK 21** or higher
 - **Maven 3.8+**
 
-### 1. Run in Development Mode
+### 1. Clone & Run with Maven
 ```bash
-mvn clean javafx:run
+git clone https://github.com/LordJalalMahmoud/LibraryManagerGUI.git
+cd LibraryManagerGUI/GeminiVersion
+mvn javafx:run
 ```
 
-### 2. Run Test Suite
+### 2. Run Automated Test Suite
 ```bash
 mvn test
 ```
@@ -201,7 +215,7 @@ mvn test
 ```bash
 mvn clean package
 # Produces standalone executable in target/
-java -jar target/library-manager-1.1.0.jar
+java -jar target/library-manager-1.2.0.jar
 ```
 
 ### 4. Build Native Packages Locally (jpackage)
@@ -232,6 +246,8 @@ src/
 │   │   ├── model/
 │   │   │   ├── Book.java            # Book domain entity & reading calculations
 │   │   │   ├── Chapter.java         # Course chapter entity with page ranges
+│   │   │   ├── ReadingSession.java  # Reading session entity with date, pages & duration
+│   │   │   ├── ReadingGoal.java     # Daily & annual reading targets
 │   │   │   ├── ReadingStatus.java   # Status state enum (NOT_STARTED, READING, COMPLETED)
 │   │   │   └── LibraryStats.java    # Aggregated KPI analytics container
 │   │   ├── database/
@@ -239,48 +255,54 @@ src/
 │   │   ├── dao/
 │   │   │   ├── BookDao.java & SqliteBookDao.java
 │   │   │   ├── ChapterDao.java & SqliteChapterDao.java
+│   │   │   ├── ReadingSessionDao.java & SqliteReadingSessionDao.java
 │   │   │   └── SettingsDao.java & SqliteSettingsDao.java
 │   │   ├── service/
-│   │   │   ├── BookService.java     # Validation, business logic & auto-transitions
-│   │   │   ├── ChapterService.java  # Chapter progress & aggregation logic
-│   │   │   ├── SettingsService.java # User preferences & theme persistence
-│   │   │   ├── BackupService.java   # SQLite database backup & restore
-│   │   │   └── SampleDataService.java # Curated classic books loader
+│   │   │   ├── BookService.java           # Validation, business logic & auto-transitions
+│   │   │   ├── ChapterService.java        # Chapter progress & aggregation logic
+│   │   │   ├── ReadingTrackerService.java # Streaks, daily averages & goal calculations
+│   │   │   ├── SettingsService.java       # User preferences & theme persistence
+│   │   │   ├── BackupService.java         # SQLite database backup & restore
+│   │   │   └── SampleDataService.java     # Curated classic books & reading sessions loader
 │   │   ├── component/
-│   │   │   ├── BookCardComponent.java # Modern book card with progress bar & badges
-│   │   │   ├── StatCardComponent.java # Metric card with animated number counters
-│   │   │   └── ToastNotification.java # Non-blocking floating toast system
+│   │   │   ├── BookCardComponent.java     # Modern book card with progress bar & badges
+│   │   │   ├── StatCardComponent.java     # Metric card with animated number counters
+│   │   │   └── ToastNotification.java     # Non-blocking floating toast system
 │   │   ├── controller/
 │   │   │   ├── MainController.java        # Shell navigation & view coordinator
-│   │   │   ├── DashboardController.java   # Analytics cards, pie & bar charts
+│   │   │   ├── DashboardController.java   # Analytics, streaks, daily avg & goals
 │   │   │   ├── LibraryController.java     # Responsive card grid, search & filters
-│   │   │   ├── BookDetailsController.java # Dedicated book & chapter reading view
+│   │   │   ├── BookDetailsController.java # Book reading view, chapters & sessions
 │   │   │   ├── BookFormController.java    # Add / Edit book modal dialog
 │   │   │   ├── ChapterFormController.java # Add course chapter modal dialog
-│   │   │   └── SettingsController.java    # Preferences, themes & database backup
+│   │   │   ├── SessionFormController.java # Log reading session modal dialog
+│   │   │   └── SettingsController.java    # Preferences, reading goals & backup
 │   │   └── util/
-│   │       ├── AnimationUtil.java   # Smooth UI transitions & number counters
-│   │       ├── DateUtil.java        # Friendly date formatting
-│   │       ├── DialogUtil.java      # Modern styled confirmation & error modals
-│   │       ├── IconUtil.java        # Scalable SVG vector icon factory
-│   │       └── I18n.java            # ResourceBundle localization & RTL detector
+│   │       ├── AnimationUtil.java         # Smooth UI transitions & number counters
+│   │       ├── DateUtil.java              # Friendly date formatting
+│   │       ├── DialogUtil.java            # Modern styled confirmation & error modals
+│   │       ├── IconUtil.java              # Scalable SVG vector icon factory
+│   │       └── I18n.java                  # ResourceBundle localization & RTL detector
 │   └── resources/
 │       ├── css/
-│       │   ├── styles.css           # Base component stylesheet & layout rules
-│       │   ├── theme-dark.css       # Dark theme CSS variable tokens
-│       │   └── theme-light.css      # Light theme CSS variable tokens
+│       │   ├── styles.css                 # Base component stylesheet & layout rules
+│       │   ├── theme-dark.css             # Dark theme CSS variable tokens
+│       │   └── theme-light.css            # Light theme CSS variable tokens
 │       ├── i18n/
-│       │   ├── messages_en.properties # English localization strings
-│       │   └── messages_ar.properties # Arabic localization strings (العربية)
+│       │   ├── messages_en.properties     # English localization strings
+│       │   └── messages_ar.properties     # Arabic localization strings (العربية)
 │       └── icons/
-│           └── app-icon.png         # High-resolution application icon
+│           └── app-icon.png               # High-resolution application icon
 └── test/
     └── java/com/librarymanager/
         ├── model/BookTest.java
-        ├── dao/BookDaoTest.java
+        ├── dao/
+        │   ├── BookDaoTest.java
+        │   └── ReadingSessionDaoTest.java
         ├── service/
         │   ├── BookServiceTest.java
         │   ├── ChapterServiceTest.java
+        │   ├── ReadingTrackerServiceTest.java
         │   ├── SettingsServiceTest.java
         │   └── BackupServiceTest.java
         └── util/I18nTest.java
@@ -289,8 +311,6 @@ src/
 ---
 
 ## 📄 License
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
 ---
 
 <p align="center">

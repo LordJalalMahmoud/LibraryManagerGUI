@@ -5,9 +5,14 @@ import com.librarymanager.component.StatCardComponent;
 import com.librarymanager.component.ToastNotification;
 import com.librarymanager.model.Book;
 import com.librarymanager.model.LibraryStats;
+import com.librarymanager.model.ReadingGoal;
+import com.librarymanager.model.ReadingSession;
 import com.librarymanager.model.ReadingStatus;
 import com.librarymanager.service.BookService;
+import com.librarymanager.service.ReadingTrackerService;
 import com.librarymanager.service.SampleDataService;
+import com.librarymanager.util.AnimationUtil;
+import com.librarymanager.util.DateUtil;
 import com.librarymanager.util.I18n;
 import com.librarymanager.util.IconUtil;
 import javafx.collections.FXCollections;
@@ -23,31 +28,45 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Controller for the Dashboard screen, rendering statistics cards,
- * dynamic charts, and recently added/completed books with i18n & RTL support.
+ * reading streaks, daily averages, goals, dynamic charts,
+ * and recently added/completed books with i18n & RTL support.
  */
 public class DashboardController {
 
     private final MainController mainController;
     private final BookService bookService;
+    private final ReadingTrackerService readingTrackerService;
     private final SampleDataService sampleDataService;
 
     private final ScrollPane rootScrollPane;
     private final VBox contentBox;
 
-    // Stat Cards
+    // Stat Cards (Collection)
     private StatCardComponent totalBooksCard;
     private StatCardComponent readingCard;
     private StatCardComponent completedCard;
     private StatCardComponent notStartedCard;
     private StatCardComponent progressCard;
+
+    // Stat Cards (Reading Habit & Streaks)
+    private StatCardComponent streakCard;
+    private StatCardComponent dailyAvgCard;
+
+    // Goals Widget
+    private Label dailyGoalLabel;
+    private ProgressBar dailyGoalBar;
+    private Label yearlyGoalLabel;
+    private ProgressBar yearlyGoalBar;
 
     // Charts
     private PieChart statusPieChart;
@@ -56,12 +75,15 @@ public class DashboardController {
     // Content sections
     private FlowPane currentlyReadingSection;
     private VBox readingSectionContainer;
+    private FlowPane recentSessionsSection;
+    private VBox recentSessionsContainer;
     private FlowPane recentBooksSection;
     private VBox emptyPromptBox;
 
     public DashboardController(MainController mainController, BookService bookService, SampleDataService sampleDataService) {
         this.mainController = mainController;
         this.bookService = bookService;
+        this.readingTrackerService = bookService.getReadingTrackerService();
         this.sampleDataService = sampleDataService;
 
         contentBox = new VBox(24);
@@ -98,7 +120,11 @@ public class DashboardController {
         emptyPromptBox = buildEmptyPromptBox();
         contentBox.getChildren().add(emptyPromptBox);
 
-        // 3. Charts Section
+        // 3. Habits & Goals Row (v1.2 Reading Tracker)
+        HBox habitsRow = buildHabitsAndGoalsRow();
+        contentBox.getChildren().add(habitsRow);
+
+        // 4. Charts Section
         HBox chartsRow = new HBox(20);
         chartsRow.setFillHeight(true);
 
@@ -137,7 +163,7 @@ public class DashboardController {
         chartsRow.getChildren().addAll(pieChartCard, barChartCard);
         contentBox.getChildren().add(chartsRow);
 
-        // 4. Currently Reading Section
+        // 5. Currently Reading Section
         readingSectionContainer = new VBox(12);
         Label readingHeading = new Label(I18n.get("dashboard.currently_reading"));
         readingHeading.getStyleClass().add("stat-title");
@@ -149,7 +175,19 @@ public class DashboardController {
         readingSectionContainer.getChildren().addAll(readingHeading, currentlyReadingSection);
         contentBox.getChildren().add(readingSectionContainer);
 
-        // 5. Recently Added Books Section
+        // 6. Recent Reading Sessions Feed (v1.2)
+        recentSessionsContainer = new VBox(12);
+        Label sessionsHeading = new Label(I18n.get("dashboard.recent_sessions"));
+        sessionsHeading.getStyleClass().add("stat-title");
+        sessionsHeading.setStyle("-fx-font-size: 15px; -fx-font-weight: 700;");
+
+        recentSessionsSection = new FlowPane();
+        recentSessionsSection.setHgap(16);
+        recentSessionsSection.setVgap(16);
+        recentSessionsContainer.getChildren().addAll(sessionsHeading, recentSessionsSection);
+        contentBox.getChildren().add(recentSessionsContainer);
+
+        // 7. Recently Added Books Section
         VBox recentSectionContainer = new VBox(12);
         Label recentHeading = new Label(I18n.get("dashboard.recently_added"));
         recentHeading.getStyleClass().add("stat-title");
@@ -160,6 +198,99 @@ public class DashboardController {
         recentBooksSection.setVgap(16);
         recentSectionContainer.getChildren().addAll(recentHeading, recentBooksSection);
         contentBox.getChildren().add(recentSectionContainer);
+    }
+
+    private HBox buildHabitsAndGoalsRow() {
+        HBox row = new HBox(16);
+        row.setFillHeight(true);
+
+        // 1. Reading Streak Card
+        streakCard = new StatCardComponent(
+                I18n.get("stat.streak"),
+                "0",
+                "",
+                IconUtil.IconType.FIRE,
+                "stat-accent-rose"
+        );
+        streakCard.setMinWidth(200);
+
+        // 2. Daily Average Card
+        dailyAvgCard = new StatCardComponent(
+                I18n.get("stat.daily_avg"),
+                "0",
+                "",
+                IconUtil.IconType.CLOCK,
+                "stat-accent-teal"
+        );
+        dailyAvgCard.setMinWidth(200);
+
+        // 3. Reading Goals Card
+        VBox goalsCard = new VBox(12);
+        goalsCard.getStyleClass().addAll("stat-card", "stat-accent-indigo");
+        goalsCard.setPadding(new Insets(18, 20, 18, 20));
+        goalsCard.setMinWidth(300);
+        HBox.setHgrow(goalsCard, Priority.ALWAYS);
+
+        HBox topRow = new HBox(10);
+        topRow.setAlignment(I18n.isRTL() ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+
+        Label goalsTitle = new Label(I18n.get("stat.goals.title"));
+        goalsTitle.getStyleClass().add("stat-title");
+        HBox.setHgrow(goalsTitle, Priority.ALWAYS);
+
+        StackPane iconContainer = new StackPane();
+        iconContainer.getStyleClass().add("stat-icon-container");
+        iconContainer.setMinSize(36, 36);
+        iconContainer.setMaxSize(36, 36);
+        SVGPath targetIcon = IconUtil.createIcon(IconUtil.IconType.TARGET, 16);
+        targetIcon.getStyleClass().add("stat-icon");
+        iconContainer.getChildren().add(targetIcon);
+
+        topRow.getChildren().addAll(goalsTitle, iconContainer);
+
+        // Daily Goal Progress
+        VBox dailyBox = new VBox(4);
+        HBox dailyHeader = new HBox();
+        dailyHeader.setAlignment(Pos.CENTER_LEFT);
+
+        Label dailyTitle = new Label(I18n.get("stat.goals.daily"));
+        dailyTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: -text-main;");
+        HBox.setHgrow(dailyTitle, Priority.ALWAYS);
+
+        dailyGoalLabel = new Label("0 / 25");
+        dailyGoalLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: -accent-primary;");
+        dailyHeader.getChildren().addAll(dailyTitle, dailyGoalLabel);
+
+        dailyGoalBar = new ProgressBar(0.0);
+        dailyGoalBar.setMaxWidth(Double.MAX_VALUE);
+        dailyGoalBar.setPrefHeight(7);
+        dailyGoalBar.getStyleClass().add("book-progress-bar");
+        dailyBox.getChildren().addAll(dailyHeader, dailyGoalBar);
+
+        // Yearly Goal Progress
+        VBox yearlyBox = new VBox(4);
+        HBox yearlyHeader = new HBox();
+        yearlyHeader.setAlignment(Pos.CENTER_LEFT);
+
+        Label yearlyTitle = new Label(I18n.get("stat.goals.yearly"));
+        yearlyTitle.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: -text-main;");
+        HBox.setHgrow(yearlyTitle, Priority.ALWAYS);
+
+        yearlyGoalLabel = new Label("0 / 12");
+        yearlyGoalLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: #10b981;");
+        yearlyHeader.getChildren().addAll(yearlyTitle, yearlyGoalLabel);
+
+        yearlyGoalBar = new ProgressBar(0.0);
+        yearlyGoalBar.setMaxWidth(Double.MAX_VALUE);
+        yearlyGoalBar.setPrefHeight(7);
+        yearlyGoalBar.getStyleClass().add("book-progress-bar");
+        yearlyBox.getChildren().addAll(yearlyHeader, yearlyGoalBar);
+
+        goalsCard.getChildren().addAll(topRow, dailyBox, yearlyBox);
+        AnimationUtil.addCardHover(goalsCard);
+
+        row.getChildren().addAll(streakCard, dailyAvgCard, goalsCard);
+        return row;
     }
 
     private VBox buildEmptyPromptBox() {
@@ -208,6 +339,38 @@ public class DashboardController {
 
         String pageInfo = I18n.get("stat.progress.sub", stats.getPagesRead(), stats.getTotalPages());
         progressCard.updateTextValue(stats.getFormattedOverallProgress(), pageInfo);
+
+        // 2. Update Streak & Habit Cards
+        int streak = readingTrackerService.calculateCurrentStreak();
+        int bestStreak = readingTrackerService.calculateBestStreak();
+        boolean readToday = readingTrackerService.hasReadToday();
+
+        String streakStatus = readToday
+                ? I18n.get("stat.streak.today_read")
+                : (streak > 0 ? I18n.get("stat.streak.today_pending") : I18n.get("stat.streak.none"));
+        String streakSub = streakStatus + " • " + I18n.get("stat.streak.best", bestStreak);
+        streakCard.updateNumericValue(streak, streakSub);
+
+        double dailyAvg = readingTrackerService.calculateDailyAveragePages();
+        String dailyAvgStr = String.format(Locale.US, "%.1f", dailyAvg);
+        String dailyAvgSub = I18n.get("stat.daily_avg.sub", String.format(Locale.US, "%.0f", dailyAvg));
+        dailyAvgCard.updateTextValue(dailyAvgStr, dailyAvgSub);
+
+        // 3. Update Goals Widget
+        ReadingGoal goal = readingTrackerService.getReadingGoal();
+        String dailySub = I18n.get("stat.goals.daily_sub", goal.getPagesReadToday(), goal.getDailyPagesGoal());
+        if (goal.isDailyGoalAchieved()) {
+            dailySub += " " + I18n.get("stat.goals.achieved");
+        }
+        dailyGoalLabel.setText(dailySub);
+        AnimationUtil.animateProgressBar(dailyGoalBar, goal.getDailyProgressRatio());
+
+        String yearlySub = I18n.get("stat.goals.yearly_sub", goal.getBooksCompletedThisYear(), goal.getYearlyBooksGoal());
+        if (goal.isYearlyGoalAchieved()) {
+            yearlySub += " " + I18n.get("stat.goals.achieved");
+        }
+        yearlyGoalLabel.setText(yearlySub);
+        AnimationUtil.animateProgressBar(yearlyGoalBar, goal.getYearlyProgressRatio());
 
         // Visibility of empty prompt
         boolean isEmpty = stats.getTotalBooks() == 0;
@@ -263,6 +426,20 @@ public class DashboardController {
             }
         }
 
+        // Refresh Recent Reading Sessions Activity Feed
+        recentSessionsSection.getChildren().clear();
+        List<ReadingSession> recentSessions = readingTrackerService.getRecentSessions(4);
+        if (recentSessions.isEmpty()) {
+            recentSessionsContainer.setVisible(false);
+            recentSessionsContainer.setManaged(false);
+        } else {
+            recentSessionsContainer.setVisible(true);
+            recentSessionsContainer.setManaged(true);
+            for (ReadingSession s : recentSessions) {
+                recentSessionsSection.getChildren().add(buildRecentSessionCard(s));
+            }
+        }
+
         // Refresh Recently Added Section
         recentBooksSection.getChildren().clear();
         List<Book> recentBooks = stats.getRecentlyAdded();
@@ -277,6 +454,57 @@ public class DashboardController {
             );
             recentBooksSection.getChildren().add(card);
         }
+    }
+
+    private HBox buildRecentSessionCard(ReadingSession session) {
+        HBox card = new HBox(14);
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(12, 16, 12, 16));
+        card.setStyle("-fx-background-color: -bg-card; -fx-border-color: -border-subtle; -fx-border-width: 1; -fx-background-radius: 8px; -fx-border-radius: 8px; -fx-cursor: hand;");
+        card.setPrefWidth(320);
+
+        // Date indicator
+        VBox dateBox = new VBox(2);
+        dateBox.setAlignment(Pos.CENTER);
+        Label dateLbl = new Label(DateUtil.format(session.getSessionDate()));
+        dateLbl.getStyleClass().add("meta-chip");
+        dateBox.getChildren().add(dateLbl);
+
+        // Info VBox
+        VBox infoBox = new VBox(3);
+        HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+        String titleStr = session.getBookTitle() != null ? session.getBookTitle() : "Book #" + session.getBookId();
+        Label titleLabel = new Label(titleStr);
+        titleLabel.setStyle("-fx-font-weight: 700; -fx-font-size: 13px; -fx-text-fill: -text-main;");
+        titleLabel.setMaxWidth(200);
+
+        HBox chips = new HBox(6);
+        Label pagesChip = new Label("+" + I18n.get("sessions.pages_read", session.getPagesRead()));
+        pagesChip.getStyleClass().addAll("badge-chip", "status-reading");
+
+        Label durChip = null;
+        if (session.getDurationMinutes() > 0) {
+            durChip = new Label(session.getFormattedDuration());
+            durChip.getStyleClass().add("tag-chip");
+        }
+
+        chips.getChildren().add(pagesChip);
+        if (durChip != null) {
+            chips.getChildren().add(durChip);
+        }
+
+        infoBox.getChildren().addAll(titleLabel, chips);
+
+        card.getChildren().addAll(dateBox, infoBox);
+
+        // On card click -> open book details
+        card.setOnMouseClicked(e -> {
+            bookService.getBookById(session.getBookId()).ifPresent(b -> mainController.navigateToBookDetails(b));
+        });
+
+        AnimationUtil.addCardHover(card);
+        return card;
     }
 
     private void toggleFavorite(Book book) {
