@@ -5,6 +5,7 @@ import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -96,5 +97,31 @@ public class DialogUtil {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public static Optional<String> promptText(Stage owner, String title, String header, String prompt, String defaultValue) {
+        TextInputDialog dialog = new TextInputDialog(defaultValue != null ? defaultValue : "");
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        applyThemeAndOrientation(dialog);
+
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+        dialog.setContentText(prompt);
+
+        return dialog.showAndWait().map(String::trim).filter(s -> !s.isEmpty());
+    }
+
+    public static Optional<String> promptChoice(Stage owner, String title, String header, String prompt, List<String> choices, String defaultChoice) {
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(defaultChoice, choices);
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        applyThemeAndOrientation(dialog);
+
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+        dialog.setContentText(prompt);
+
+        return dialog.showAndWait().map(String::trim).filter(s -> !s.isEmpty());
     }
 }

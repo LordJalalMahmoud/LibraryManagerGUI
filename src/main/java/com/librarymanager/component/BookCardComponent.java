@@ -9,6 +9,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tooltip;
@@ -34,6 +35,8 @@ public class BookCardComponent extends VBox {
     private final ProgressBar progressBar;
     private final Label progressTextLabel;
     private final Label statusChip;
+    private final CheckBox selectCheckBox;
+    private Consumer<Boolean> onSelectionChanged;
 
     public BookCardComponent(Book book,
                              Consumer<Book> onOpen,
@@ -86,6 +89,28 @@ public class BookCardComponent extends VBox {
             }
         });
         coverContainer.getChildren().add(favBtn);
+
+        // Bulk selection checkbox on cover
+        selectCheckBox = new CheckBox();
+        selectCheckBox.getStyleClass().add("card-select-checkbox");
+        selectCheckBox.setTooltip(new Tooltip(I18n.get("bulk.select_book")));
+        selectCheckBox.setStyle("-fx-cursor: hand;");
+        StackPane.setAlignment(selectCheckBox, I18n.isRTL() ? Pos.TOP_RIGHT : Pos.TOP_LEFT);
+        StackPane.setMargin(selectCheckBox, new Insets(8));
+        selectCheckBox.selectedProperty().addListener((obs, oldV, isSel) -> {
+            if (isSel) {
+                if (!getStyleClass().contains("selected")) {
+                    getStyleClass().add("selected");
+                }
+            } else {
+                getStyleClass().remove("selected");
+            }
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(isSel);
+            }
+        });
+        selectCheckBox.setOnMouseClicked(e -> e.consume());
+        coverContainer.getChildren().add(selectCheckBox);
 
         // 2. Status Badge Chip & Metadata Chips
         statusChip = new Label(book.getStatus().getDisplayName());
@@ -302,5 +327,21 @@ public class BookCardComponent extends VBox {
 
     public Book getBook() {
         return book;
+    }
+
+    public boolean isSelected() {
+        return selectCheckBox.isSelected();
+    }
+
+    public void setSelected(boolean selected) {
+        selectCheckBox.setSelected(selected);
+    }
+
+    public void setOnSelectionChanged(Consumer<Boolean> listener) {
+        this.onSelectionChanged = listener;
+    }
+
+    public CheckBox getSelectCheckBox() {
+        return selectCheckBox;
     }
 }

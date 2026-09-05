@@ -1,10 +1,14 @@
 package com.librarymanager.service;
 
 import com.librarymanager.dao.BookDao;
+import com.librarymanager.dao.SavedSearchDao;
 import com.librarymanager.dao.SqliteBookDao;
+import com.librarymanager.dao.SqliteSavedSearchDao;
 import com.librarymanager.model.Book;
+import com.librarymanager.model.DuplicateGroup;
 import com.librarymanager.model.LibraryStats;
 import com.librarymanager.model.ReadingStatus;
+import com.librarymanager.model.SavedSearch;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,23 +21,33 @@ public class BookService {
     private final BookDao bookDao;
     private final ChapterService chapterService;
     private final ReadingTrackerService readingTrackerService;
+    private final SavedSearchDao savedSearchDao;
 
     public BookService() {
-        this(new SqliteBookDao(), new ChapterService(), new ReadingTrackerService());
+        this(new SqliteBookDao(), new ChapterService(), new ReadingTrackerService(), new SqliteSavedSearchDao());
     }
 
     public BookService(BookDao bookDao) {
-        this(bookDao, new ChapterService(), new ReadingTrackerService());
+        this(bookDao, new ChapterService(), new ReadingTrackerService(), new SqliteSavedSearchDao());
     }
 
     public BookService(BookDao bookDao, ChapterService chapterService) {
-        this(bookDao, chapterService, new ReadingTrackerService());
+        this(bookDao, chapterService, new ReadingTrackerService(), new SqliteSavedSearchDao());
     }
 
     public BookService(BookDao bookDao, ChapterService chapterService, ReadingTrackerService readingTrackerService) {
+        this(bookDao, chapterService, readingTrackerService, new SqliteSavedSearchDao());
+    }
+
+    public BookService(BookDao bookDao, SavedSearchDao savedSearchDao) {
+        this(bookDao, new ChapterService(), new ReadingTrackerService(), savedSearchDao);
+    }
+
+    public BookService(BookDao bookDao, ChapterService chapterService, ReadingTrackerService readingTrackerService, SavedSearchDao savedSearchDao) {
         this.bookDao = bookDao;
         this.chapterService = chapterService;
         this.readingTrackerService = readingTrackerService;
+        this.savedSearchDao = savedSearchDao;
     }
 
     public ChapterService getChapterService() {
@@ -207,6 +221,55 @@ public class BookService {
     public List<Book> searchBooks(String query, ReadingStatus statusFilter, String categoryFilter, String tagFilter,
                                   Boolean isFavorite, Boolean isWishlist, String sortBy, boolean ascending) {
         return bookDao.search(query, statusFilter, categoryFilter, tagFilter, isFavorite, isWishlist, sortBy, ascending);
+    }
+
+    public List<Book> searchBooks(String query, String authorQuery, ReadingStatus statusFilter, String categoryFilter,
+                                  String tagFilter, Boolean isFavorite, Boolean isWishlist, Integer minPages, Integer maxPages,
+                                  String sortBy, boolean ascending) {
+        return bookDao.search(query, authorQuery, statusFilter, categoryFilter, tagFilter, isFavorite, isWishlist, minPages, maxPages, sortBy, ascending);
+    }
+
+    public List<DuplicateGroup> findDuplicates() {
+        return bookDao.findDuplicates();
+    }
+
+    public void resolveDuplicate(long bookToKeepId, long bookToDeleteId, boolean mergeProgress) {
+        bookDao.resolveDuplicate(bookToKeepId, bookToDeleteId, mergeProgress);
+    }
+
+    public void bulkMarkAsCompleted(List<Long> bookIds) {
+        bookDao.bulkMarkAsCompleted(bookIds);
+    }
+
+    public void bulkMarkAsReading(List<Long> bookIds) {
+        bookDao.bulkMarkAsReading(bookIds);
+    }
+
+    public void bulkDelete(List<Long> bookIds) {
+        bookDao.bulkDelete(bookIds);
+    }
+
+    public void bulkUpdateCategory(List<Long> bookIds, String newCategory) {
+        bookDao.bulkUpdateCategory(bookIds, newCategory);
+    }
+
+    public void bulkAddTag(List<Long> bookIds, String tag) {
+        bookDao.bulkAddTag(bookIds, tag);
+    }
+
+    public SavedSearch saveSearch(SavedSearch search) {
+        if (search == null || search.getName() == null || search.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Search name is required.");
+        }
+        return savedSearchDao.save(search);
+    }
+
+    public List<SavedSearch> getAllSavedSearches() {
+        return savedSearchDao.findAll();
+    }
+
+    public void deleteSavedSearch(long id) {
+        savedSearchDao.delete(id);
     }
 
     public List<String> getAllCategories() {

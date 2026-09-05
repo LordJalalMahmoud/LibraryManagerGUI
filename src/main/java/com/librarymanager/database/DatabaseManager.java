@@ -143,6 +143,25 @@ public class DatabaseManager {
             );
             """;
 
+        String createSavedSearchesTable = """
+            CREATE TABLE IF NOT EXISTS saved_searches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                query TEXT,
+                author TEXT,
+                status TEXT,
+                category TEXT,
+                tag TEXT,
+                is_favorite INTEGER,
+                is_wishlist INTEGER,
+                min_pages INTEGER,
+                max_pages INTEGER,
+                sort_by TEXT,
+                ascending INTEGER NOT NULL DEFAULT 0,
+                date_created TEXT NOT NULL
+            );
+            """;
+
         String createIndexes = """
             CREATE INDEX IF NOT EXISTS idx_books_status ON books(status);
             CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
@@ -155,6 +174,7 @@ public class DatabaseManager {
             CREATE INDEX IF NOT EXISTS idx_chapters_book_id ON chapters(book_id);
             CREATE INDEX IF NOT EXISTS idx_sessions_book_id ON reading_sessions(book_id);
             CREATE INDEX IF NOT EXISTS idx_sessions_date ON reading_sessions(session_date);
+            CREATE INDEX IF NOT EXISTS idx_saved_searches_name ON saved_searches(name);
             """;
 
         try (Connection conn = getConnection();
@@ -164,6 +184,7 @@ public class DatabaseManager {
             stmt.execute(createChaptersTable);
             stmt.execute(createSessionsTable);
             stmt.execute(createSettingsTable);
+            stmt.execute(createSavedSearchesTable);
             migrateSchema(conn);
             stmt.execute(createIndexes);
             LOGGER.info("Database initialized successfully at: " + databasePath);
@@ -210,6 +231,31 @@ public class DatabaseManager {
             } catch (SQLException ignored) {
                 // Column already exists, safe to ignore
             }
+        }
+
+        String createSavedSearchesIfMissing = """
+            CREATE TABLE IF NOT EXISTS saved_searches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                query TEXT,
+                author TEXT,
+                status TEXT,
+                category TEXT,
+                tag TEXT,
+                is_favorite INTEGER,
+                is_wishlist INTEGER,
+                min_pages INTEGER,
+                max_pages INTEGER,
+                sort_by TEXT,
+                ascending INTEGER NOT NULL DEFAULT 0,
+                date_created TEXT NOT NULL
+            );
+            """;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(createSavedSearchesIfMissing);
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_saved_searches_name ON saved_searches(name);");
+        } catch (SQLException e) {
+            LOGGER.log(Level.FINE, "Saved searches table migration note: " + e.getMessage());
         }
     }
 
@@ -259,6 +305,8 @@ public class DatabaseManager {
     public void resetAllData() throws SQLException {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM saved_searches;");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='saved_searches';");
             stmt.execute("DELETE FROM reading_sessions;");
             stmt.execute("DELETE FROM sqlite_sequence WHERE name='reading_sessions';");
             stmt.execute("DELETE FROM chapters;");

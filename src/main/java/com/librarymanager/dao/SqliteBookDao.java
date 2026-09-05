@@ -4,8 +4,10 @@ import com.librarymanager.database.DatabaseManager;
 import com.librarymanager.model.AuthorStat;
 import com.librarymanager.model.Book;
 import com.librarymanager.model.CategoryStat;
+import com.librarymanager.model.DuplicateGroup;
 import com.librarymanager.model.LibraryStats;
 import com.librarymanager.model.ReadingStatus;
+import com.librarymanager.util.I18n;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -190,6 +192,13 @@ public class SqliteBookDao implements BookDao {
     @Override
     public List<Book> search(String query, ReadingStatus statusFilter, String categoryFilter, String tagFilter,
                              Boolean isFavorite, Boolean isWishlist, String sortBy, boolean ascending) {
+        return search(query, null, statusFilter, categoryFilter, tagFilter, isFavorite, isWishlist, null, null, sortBy, ascending);
+    }
+
+    @Override
+    public List<Book> search(String query, String authorQuery, ReadingStatus statusFilter, String categoryFilter, String tagFilter,
+                             Boolean isFavorite, Boolean isWishlist, Integer minPages, Integer maxPages,
+                             String sortBy, boolean ascending) {
         StringBuilder sql = new StringBuilder("""
             SELECT b.*,
                 (SELECT count(*) FROM chapters WHERE book_id = b.id) AS total_chapters,
@@ -206,11 +215,17 @@ public class SqliteBookDao implements BookDao {
                     OR LOWER(COALESCE(b.isbn, '')) LIKE ?
                     OR LOWER(COALESCE(b.category, '')) LIKE ?
                     OR LOWER(COALESCE(b.tags, '')) LIKE ?
+                    OR LOWER(COALESCE(b.description, '')) LIKE ?
                 )\s""");
             String wildcard = "%" + query.trim().toLowerCase() + "%";
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 7; i++) {
                 params.add(wildcard);
             }
+        }
+
+        if (authorQuery != null && !authorQuery.trim().isEmpty()) {
+            sql.append("AND LOWER(b.author) LIKE ? ");
+            params.add("%" + authorQuery.trim().toLowerCase() + "%");
         }
 
         if (statusFilter != null) {
@@ -236,6 +251,16 @@ public class SqliteBookDao implements BookDao {
         if (isWishlist != null) {
             sql.append("AND b.is_wishlist = ? ");
             params.add(isWishlist ? 1 : 0);
+        }
+
+        if (minPages != null && minPages > 0) {
+            sql.append("AND b.total_pages >= ? ");
+            params.add(minPages);
+        }
+
+        if (maxPages != null && maxPages > 0) {
+            sql.append("AND b.total_pages <= ? ");
+            params.add(maxPages);
         }
 
         // Safe order by column mapping
@@ -664,6 +689,317 @@ public class SqliteBookDao implements BookDao {
             LOGGER.log(Level.WARNING, "Failed to count books completed in year: " + year, e);
         }
         return 0;
+    }
+
+    private String cleanIsbn(String isbn) {
+        if (isbn == null) return null;
+        String clean = isbn.replaceAll("[^0-9a-zA-Z]", "").toUpperCase();
+        return clean.length() >= 8 ? clean : null;
+    }
+
+    private String normalizeText(String text) {
+        if (text == null) return "";
+        return text.toLowerCase().replaceAll("[\\p{Punct}\\s]+", " ").trim();
+    }
+
+    @Override
+    public List<DuplicateGroup> findDuplicates() {
+        List<Book> allBooks = findAll();
+        if (allBooks.size() < 2) {
+            return Collections.emptyList();
+        }
+
+        int n = allBooks.size();
+        int[] parent = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+
+        java.util.function.IntUnaryOperator find = new java.util.function.IntUnaryOperator() {
+            @Override
+            public int applyAsInt(int i) {
+                int root = i;
+                while (root != parent[root]) root = parent[root];
+                int curr = i;
+                while (curr != root) {
+                    int next = parent[curr];
+                    parent[curr] = root;
+                    curr = next;
+                }
+                return root;
+            }
+        };
+
+        Map<String, List<Integer>> isbnIndex = new HashMap<>();
+        Map<String, List<Integer>> titleAuthorIndex = new HashMap<>();
+
+        for (int i = 0; i < n; i++) {
+            Book b = allBooks.get(i);
+            String isbn = cleanIsbn(b.getIsbn());
+            if (isbn != null) {
+                isbnIndex.computeIfAbsent(isbn, k -> new ArrayList<>()).add(i);
+            }
+            String normTitle = normalizeText(b.getTitle());
+            String normAuthor = normalizeText(b.getAuthor());
+            if (!normTitle.isEmpty() && !normAuthor.isEmpty()) {
+                titleAuthorIndex.computeIfAbsent(normTitle + " ::: " + normAuthor, k -> new ArrayList<>()).add(i);
+            }
+        }
+
+        // Connect ISBN matches
+        for (List<Integer> list : isbnIndex.values()) {
+            if (list.size() > 1) {
+                int root = find.applyAsInt(list.get(0));
+                for (int i = 1; i < list.size(); i++) {
+                    int otherRoot = find.applyAsInt(list.get(i));
+                    parent[otherRoot] = root;
+                }
+            }
+        }
+
+        // Connect Title + Author matches
+        for (List<Integer> list : titleAuthorIndex.values()) {
+            if (list.size() > 1) {
+                int root = find.applyAsInt(list.get(0));
+                for (int i = 1; i < list.size(); i++) {
+                    int otherRoot = find.applyAsInt(list.get(i));
+                    parent[otherRoot] = root;
+                }
+            }
+        }
+
+        // Group by root
+        Map<Integer, List<Book>> clusters = new LinkedHashMap<>();
+        for (int i = 0; i < n; i++) {
+            int root = find.applyAsInt(i);
+            clusters.computeIfAbsent(root, k -> new ArrayList<>()).add(allBooks.get(i));
+        }
+
+        List<DuplicateGroup> result = new ArrayList<>();
+        for (List<Book> groupBooks : clusters.values()) {
+            if (groupBooks.size() > 1) {
+                boolean hasSameIsbn = false;
+                String matchedIsbn = null;
+                for (int i = 0; i < groupBooks.size(); i++) {
+                    String isbn1 = cleanIsbn(groupBooks.get(i).getIsbn());
+                    for (int j = i + 1; j < groupBooks.size(); j++) {
+                        String isbn2 = cleanIsbn(groupBooks.get(j).getIsbn());
+                        if (isbn1 != null && isbn1.equalsIgnoreCase(isbn2)) {
+                            hasSameIsbn = true;
+                            matchedIsbn = isbn1;
+                            break;
+                        }
+                    }
+                    if (hasSameIsbn) break;
+                }
+
+                String reason;
+                if (hasSameIsbn) {
+                    reason = I18n.getOrDefault("duplicate.reason.isbn", "Matching ISBN: " + matchedIsbn, matchedIsbn);
+                } else {
+                    reason = I18n.getOrDefault("duplicate.reason.title_author", "Matching Title & Author");
+                }
+                result.add(new DuplicateGroup(reason, groupBooks));
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public void resolveDuplicate(long bookToKeepId, long bookToDeleteId, boolean mergeProgress) {
+        if (bookToKeepId == bookToDeleteId) return;
+
+        Optional<Book> keepOpt = findById(bookToKeepId);
+        Optional<Book> delOpt = findById(bookToDeleteId);
+        if (keepOpt.isEmpty() || delOpt.isEmpty()) {
+            return;
+        }
+
+        Book keep = keepOpt.get();
+        Book del = delOpt.get();
+
+        if (mergeProgress) {
+            // Keep max current page
+            if (del.getCurrentPage() > keep.getCurrentPage()) {
+                keep.setCurrentPage(del.getCurrentPage());
+            }
+
+            // Keep status: COMPLETED takes precedence over READING, which takes precedence over NOT_STARTED
+            if (del.getStatus() == ReadingStatus.COMPLETED && keep.getStatus() != ReadingStatus.COMPLETED) {
+                keep.setStatus(ReadingStatus.COMPLETED);
+                if (keep.getDateCompleted() == null) {
+                    keep.setDateCompleted(del.getDateCompleted() != null ? del.getDateCompleted() : LocalDate.now());
+                }
+            } else if (del.getStatus() == ReadingStatus.READING && keep.getStatus() == ReadingStatus.NOT_STARTED) {
+                keep.setStatus(ReadingStatus.READING);
+                if (keep.getDateStarted() == null) {
+                    keep.setDateStarted(del.getDateStarted() != null ? del.getDateStarted() : LocalDate.now());
+                }
+            }
+
+            // Fill missing metadata
+            if ((keep.getDescription() == null || keep.getDescription().isBlank()) && del.getDescription() != null && !del.getDescription().isBlank()) {
+                keep.setDescription(del.getDescription());
+            }
+            if ((keep.getCoverImage() == null || keep.getCoverImage().isBlank()) && del.getCoverImage() != null && !del.getCoverImage().isBlank()) {
+                keep.setCoverImage(del.getCoverImage());
+            }
+            if ((keep.getPublisher() == null || keep.getPublisher().isBlank()) && del.getPublisher() != null && !del.getPublisher().isBlank()) {
+                keep.setPublisher(del.getPublisher());
+            }
+            if ((keep.getIsbn() == null || keep.getIsbn().isBlank()) && del.getIsbn() != null && !del.getIsbn().isBlank()) {
+                keep.setIsbn(del.getIsbn());
+            }
+            if ((keep.getCategory() == null || keep.getCategory().isBlank()) && del.getCategory() != null && !del.getCategory().isBlank()) {
+                keep.setCategory(del.getCategory());
+            }
+            if (del.isFavorite()) {
+                keep.setFavorite(true);
+            }
+            if (del.isWishlist() && !keep.isWishlist() && keep.getStatus() == ReadingStatus.NOT_STARTED) {
+                keep.setWishlist(true);
+            }
+
+            // Merge tags
+            if (del.getTags() != null && !del.getTags().isBlank()) {
+                Set<String> tagSet = new LinkedHashSet<>();
+                if (keep.getTags() != null && !keep.getTags().isBlank()) {
+                    for (String t : keep.getTags().split(",")) {
+                        if (!t.trim().isEmpty()) tagSet.add(t.trim());
+                    }
+                }
+                for (String t : del.getTags().split(",")) {
+                    if (!t.trim().isEmpty()) tagSet.add(t.trim());
+                }
+                keep.setTags(String.join(", ", tagSet));
+            }
+
+            // Reassign reading_sessions to bookToKeepId so reading history isn't lost
+            try (Connection conn = databaseManager.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement("UPDATE reading_sessions SET book_id = ? WHERE book_id = ?;")) {
+                stmt.setLong(1, bookToKeepId);
+                stmt.setLong(2, bookToDeleteId);
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                LOGGER.log(Level.WARNING, "Failed to migrate reading sessions when resolving duplicate", e);
+            }
+
+            // If keep has no chapters, migrate chapters from del
+            try (Connection conn = databaseManager.getConnection()) {
+                int keepChapters = 0;
+                try (PreparedStatement checkStmt = conn.prepareStatement("SELECT count(*) FROM chapters WHERE book_id = ?;")) {
+                    checkStmt.setLong(1, bookToKeepId);
+                    try (ResultSet rs = checkStmt.executeQuery()) {
+                        if (rs.next()) keepChapters = rs.getInt(1);
+                    }
+                }
+                if (keepChapters == 0) {
+                    try (PreparedStatement migStmt = conn.prepareStatement("UPDATE chapters SET book_id = ? WHERE book_id = ?;")) {
+                        migStmt.setLong(1, bookToKeepId);
+                        migStmt.setLong(2, bookToDeleteId);
+                        migStmt.executeUpdate();
+                    }
+                }
+            } catch (SQLException e) {
+                LOGGER.log(Level.WARNING, "Failed to migrate chapters when resolving duplicate", e);
+            }
+
+            update(keep);
+        }
+
+        // Delete duplicate book
+        delete(bookToDeleteId);
+    }
+
+    @Override
+    public void bulkMarkAsCompleted(List<Long> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(bookIds.size(), "?"));
+        String sql = "UPDATE books SET status = 'COMPLETED', current_page = total_pages, date_completed = COALESCE(date_completed, date('now')) WHERE id IN (" + placeholders + ");";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < bookIds.size(); i++) {
+                stmt.setLong(i + 1, bookIds.get(i));
+            }
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to bulk mark books as completed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bulkMarkAsReading(List<Long> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(bookIds.size(), "?"));
+        String sql = "UPDATE books SET status = 'READING', date_started = COALESCE(date_started, date('now')) WHERE id IN (" + placeholders + ");";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < bookIds.size(); i++) {
+                stmt.setLong(i + 1, bookIds.get(i));
+            }
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to bulk mark books as reading", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bulkDelete(List<Long> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(bookIds.size(), "?"));
+        String sql = "DELETE FROM books WHERE id IN (" + placeholders + ");";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < bookIds.size(); i++) {
+                stmt.setLong(i + 1, bookIds.get(i));
+            }
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to bulk delete books", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bulkUpdateCategory(List<Long> bookIds, String newCategory) {
+        if (bookIds == null || bookIds.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(bookIds.size(), "?"));
+        String sql = "UPDATE books SET category = ? WHERE id IN (" + placeholders + ");";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, (newCategory != null && !newCategory.isBlank()) ? newCategory.trim() : null);
+            for (int i = 0; i < bookIds.size(); i++) {
+                stmt.setLong(i + 2, bookIds.get(i));
+            }
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to bulk update category", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bulkAddTag(List<Long> bookIds, String tag) {
+        if (bookIds == null || bookIds.isEmpty() || tag == null || tag.trim().isEmpty()) return;
+        String cleanTag = tag.trim();
+        for (Long id : bookIds) {
+            Optional<Book> opt = findById(id);
+            if (opt.isPresent()) {
+                Book b = opt.get();
+                Set<String> tags = new LinkedHashSet<>();
+                if (b.getTags() != null && !b.getTags().isBlank()) {
+                    for (String t : b.getTags().split(",")) {
+                        if (!t.trim().isEmpty()) tags.add(t.trim());
+                    }
+                }
+                if (!tags.contains(cleanTag)) {
+                    tags.add(cleanTag);
+                    b.setTags(String.join(", ", tags));
+                    update(b);
+                }
+            }
+        }
     }
 
     private Book mapResultSetToBook(ResultSet rs) throws SQLException {

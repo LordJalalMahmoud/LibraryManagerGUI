@@ -93,6 +93,22 @@ public class I18n {
         return val;
     }
 
+    public static String getOrDefault(String key, String defaultVal, Object... args) {
+        if (key == null) return defaultVal != null ? defaultVal : "";
+        String val = defaultVal;
+        if (currentBundle != null && currentBundle.containsKey(key)) {
+            val = currentBundle.getString(key);
+        }
+        if (args != null && args.length > 0 && val != null) {
+            try {
+                return MessageFormat.format(val, args);
+            } catch (Exception e) {
+                return val;
+            }
+        }
+        return val != null ? val : "";
+    }
+
     public static void addLocaleChangeListener(Consumer<Locale> listener) {
         if (listener != null) {
             localeChangeListeners.add(listener);
