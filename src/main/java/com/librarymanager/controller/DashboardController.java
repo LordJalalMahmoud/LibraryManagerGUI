@@ -3,11 +3,7 @@ package com.librarymanager.controller;
 import com.librarymanager.component.BookCardComponent;
 import com.librarymanager.component.StatCardComponent;
 import com.librarymanager.component.ToastNotification;
-import com.librarymanager.model.Book;
-import com.librarymanager.model.LibraryStats;
-import com.librarymanager.model.ReadingGoal;
-import com.librarymanager.model.ReadingSession;
-import com.librarymanager.model.ReadingStatus;
+import com.librarymanager.model.*;
 import com.librarymanager.service.BookService;
 import com.librarymanager.service.ReadingTrackerService;
 import com.librarymanager.service.SampleDataService;
@@ -26,22 +22,29 @@ import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.PieChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Controller for the Dashboard screen, rendering statistics cards,
- * reading streaks, daily averages, goals, dynamic charts,
- * and recently added/completed books with i18n & RTL support.
+ * Controller for the enhanced v1.3 Dashboard screen:
+ * - Books read per month & Pages read per month interactive trends
+ * - Total reading time & average reading speed
+ * - Most-read authors leaderboard & categories distribution
+ * - Interactive Yearly Reading Summary (Year in Review)
+ * - Reading streaks, goals, habits, and recent activities.
  */
 public class DashboardController {
+
+    public enum MonthlyViewMode {
+        PAGES,
+        BOOKS,
+        TIME
+    }
 
     private final MainController mainController;
     private final BookService bookService;
@@ -51,28 +54,46 @@ public class DashboardController {
     private final ScrollPane rootScrollPane;
     private final VBox contentBox;
 
-    // Stat Cards (Collection)
+    // 1. KPI Stat Cards
     private StatCardComponent totalBooksCard;
-    private StatCardComponent readingCard;
     private StatCardComponent completedCard;
-    private StatCardComponent notStartedCard;
-    private StatCardComponent progressCard;
-
-    // Stat Cards (Reading Habit & Streaks)
+    private StatCardComponent pagesCard;
+    private StatCardComponent timeCard;
+    private StatCardComponent speedCard;
     private StatCardComponent streakCard;
-    private StatCardComponent dailyAvgCard;
 
-    // Goals Widget
+    // 2. Yearly Reading Summary Card
+    private Label yearlySubtitleLabel;
+    private ComboBox<Integer> yearSelector;
+    private GridPane yearlyGrid;
+    private Label yBooksValLabel, yBooksSubLabel;
+    private ProgressBar yBooksBar;
+    private Label yPagesValLabel, yPagesSubLabel;
+    private Label yTimeValLabel, yTimeSubLabel;
+    private Label ySpeedValLabel, ySpeedSubLabel;
+    private Label yAuthorValLabel, yAuthorSubLabel;
+    private Label yCategoryValLabel, yCategorySubLabel;
+
+    // 3. Monthly Activity Bar Chart
+    private BarChart<String, Number> monthlyChart;
+    private CategoryAxis monthXAxis;
+    private NumberAxis monthYAxis;
+    private MonthlyViewMode currentMonthlyMode = MonthlyViewMode.PAGES;
+    private Button btnPagesMode, btnBooksMode, btnTimeMode;
+
+    // 4. Categories & Top Authors
+    private PieChart categoriesPieChart;
+    private Label categoriesEmptyLabel;
+    private VBox topAuthorsContainer;
+
+    // 5. Habits & Goals Card
+    private StatCardComponent dailyAvgCard;
     private Label dailyGoalLabel;
     private ProgressBar dailyGoalBar;
     private Label yearlyGoalLabel;
     private ProgressBar yearlyGoalBar;
 
-    // Charts
-    private PieChart statusPieChart;
-    private BarChart<String, Number> progressBreakdownChart;
-
-    // Content sections
+    // 6. Content feeds
     private FlowPane currentlyReadingSection;
     private VBox readingSectionContainer;
     private FlowPane recentSessionsSection;
@@ -103,67 +124,31 @@ public class DashboardController {
     }
 
     private void buildDashboard() {
-        // 1. Statistics Cards Row
-        HBox statsRow = new HBox(16);
-        statsRow.setFillHeight(true);
-
-        totalBooksCard = new StatCardComponent(I18n.get("stat.total_books"), "0", "", IconUtil.IconType.LIBRARY, "stat-accent-indigo");
-        readingCard = new StatCardComponent(I18n.get("stat.reading"), "0", I18n.get("stat.reading.sub"), IconUtil.IconType.READING, "stat-accent-blue");
-        completedCard = new StatCardComponent(I18n.get("stat.completed"), "0", I18n.get("stat.completed.sub"), IconUtil.IconType.COMPLETED, "stat-accent-emerald");
-        notStartedCard = new StatCardComponent(I18n.get("stat.not_started"), "0", I18n.get("stat.not_started.sub"), IconUtil.IconType.NOT_STARTED, "stat-accent-amber");
-        progressCard = new StatCardComponent(I18n.get("stat.overall_progress"), "0%", "", IconUtil.IconType.STATS, "stat-accent-purple");
-
-        statsRow.getChildren().addAll(totalBooksCard, readingCard, completedCard, notStartedCard, progressCard);
+        // 1. Top KPI Statistics Ribbon (6 cards)
+        HBox statsRow = buildKpiStatsRow();
         contentBox.getChildren().add(statsRow);
 
         // 2. Empty prompt if library is empty
         emptyPromptBox = buildEmptyPromptBox();
         contentBox.getChildren().add(emptyPromptBox);
 
-        // 3. Habits & Goals Row (v1.2 Reading Tracker)
+        // 3. Yearly Reading Summary Card (Year in Review)
+        VBox yearlySummaryCard = buildYearlySummaryCard();
+        contentBox.getChildren().add(yearlySummaryCard);
+
+        // 4. Monthly Reading Activity & Trends Chart
+        VBox monthlyActivityCard = buildMonthlyTrendsCard();
+        contentBox.getChildren().add(monthlyActivityCard);
+
+        // 5. Split Row: Top Categories & Top Authors Leaderboard
+        HBox splitSection = buildCategoriesAndAuthorsRow();
+        contentBox.getChildren().add(splitSection);
+
+        // 6. Reading Habits & Goals Row
         HBox habitsRow = buildHabitsAndGoalsRow();
         contentBox.getChildren().add(habitsRow);
 
-        // 4. Charts Section
-        HBox chartsRow = new HBox(20);
-        chartsRow.setFillHeight(true);
-
-        // Pie Chart: Status Distribution
-        VBox pieChartCard = new VBox(10);
-        pieChartCard.getStyleClass().add("stat-card");
-        pieChartCard.setPadding(new Insets(16));
-        HBox.setHgrow(pieChartCard, Priority.ALWAYS);
-
-        Label pieTitle = new Label(I18n.get("chart.status_distribution"));
-        pieTitle.getStyleClass().add("stat-title");
-
-        statusPieChart = new PieChart();
-        statusPieChart.setPrefHeight(260);
-        statusPieChart.setAnimated(true);
-        statusPieChart.setLegendVisible(true);
-        pieChartCard.getChildren().addAll(pieTitle, statusPieChart);
-
-        // Bar Chart: Pages Read vs Remaining
-        VBox barChartCard = new VBox(10);
-        barChartCard.getStyleClass().add("stat-card");
-        barChartCard.setPadding(new Insets(16));
-        HBox.setHgrow(barChartCard, Priority.ALWAYS);
-
-        Label barTitle = new Label(I18n.get("chart.progress_breakdown"));
-        barTitle.getStyleClass().add("stat-title");
-
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        progressBreakdownChart = new BarChart<>(xAxis, yAxis);
-        progressBreakdownChart.setPrefHeight(260);
-        progressBreakdownChart.setAnimated(false);
-        progressBreakdownChart.setLegendVisible(false);
-        barChartCard.getChildren().addAll(barTitle, progressBreakdownChart);
-
-        chartsRow.getChildren().addAll(pieChartCard, barChartCard);
-        contentBox.getChildren().add(chartsRow);
-
-        // 5. Currently Reading Section
+        // 7. Currently Reading Feed
         readingSectionContainer = new VBox(12);
         Label readingHeading = new Label(I18n.get("dashboard.currently_reading"));
         readingHeading.getStyleClass().add("stat-title");
@@ -175,7 +160,7 @@ public class DashboardController {
         readingSectionContainer.getChildren().addAll(readingHeading, currentlyReadingSection);
         contentBox.getChildren().add(readingSectionContainer);
 
-        // 6. Recent Reading Sessions Feed (v1.2)
+        // 8. Recent Reading Sessions Feed
         recentSessionsContainer = new VBox(12);
         Label sessionsHeading = new Label(I18n.get("dashboard.recent_sessions"));
         sessionsHeading.getStyleClass().add("stat-title");
@@ -187,7 +172,7 @@ public class DashboardController {
         recentSessionsContainer.getChildren().addAll(sessionsHeading, recentSessionsSection);
         contentBox.getChildren().add(recentSessionsContainer);
 
-        // 7. Recently Added Books Section
+        // 9. Recently Added Books Section
         VBox recentSectionContainer = new VBox(12);
         Label recentHeading = new Label(I18n.get("dashboard.recently_added"));
         recentHeading.getStyleClass().add("stat-title");
@@ -200,21 +185,280 @@ public class DashboardController {
         contentBox.getChildren().add(recentSectionContainer);
     }
 
+    private HBox buildKpiStatsRow() {
+        HBox row = new HBox(16);
+        row.setFillHeight(true);
+
+        totalBooksCard = new StatCardComponent(I18n.get("stat.total_books"), "0", "", IconUtil.IconType.LIBRARY, "stat-accent-indigo");
+        completedCard = new StatCardComponent(I18n.get("stat.completed"), "0", I18n.get("stat.completed.sub"), IconUtil.IconType.COMPLETED, "stat-accent-emerald");
+        pagesCard = new StatCardComponent(I18n.get("chart.pages_read"), "0", "", IconUtil.IconType.PAGES, "stat-accent-blue");
+        timeCard = new StatCardComponent(I18n.get("stat.reading_time"), "0m", "", IconUtil.IconType.CLOCK, "stat-accent-purple");
+        speedCard = new StatCardComponent(I18n.get("stat.reading_speed"), "0", "", IconUtil.IconType.SPEED, "stat-accent-teal");
+        streakCard = new StatCardComponent(I18n.get("stat.streak"), "0", "", IconUtil.IconType.FIRE, "stat-accent-rose");
+
+        row.getChildren().addAll(totalBooksCard, completedCard, pagesCard, timeCard, speedCard, streakCard);
+        return row;
+    }
+
+    private VBox buildYearlySummaryCard() {
+        VBox card = new VBox(18);
+        card.getStyleClass().add("yearly-summary-card");
+        card.setNodeOrientation(I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
+
+        // Header
+        HBox headerRow = new HBox(12);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane trophyBox = new StackPane();
+        trophyBox.getStyleClass().add("stat-icon-container");
+        trophyBox.setStyle("-fx-background-color: rgba(234, 179, 8, 0.15);");
+        trophyBox.setMinSize(38, 38);
+        trophyBox.setMaxSize(38, 38);
+        SVGPath trophy = IconUtil.createIcon(IconUtil.IconType.TROPHY, 18);
+        trophy.setStyle("-fx-fill: #eab308;");
+        trophyBox.getChildren().add(trophy);
+
+        VBox titleBox = new VBox(2);
+        Label titleLabel = new Label(I18n.get("stat.yearly_summary.title"));
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: -text-main;");
+        yearlySubtitleLabel = new Label("");
+        yearlySubtitleLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: 500; -fx-text-fill: -text-muted;");
+        titleBox.getChildren().addAll(titleLabel, yearlySubtitleLabel);
+        HBox.setHgrow(titleBox, Priority.ALWAYS);
+
+        HBox selectorBox = new HBox(8);
+        selectorBox.setAlignment(Pos.CENTER_RIGHT);
+        Label yearPrompt = new Label(I18n.get("stat.yearly_summary.select_year"));
+        yearPrompt.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: -text-muted;");
+
+        yearSelector = new ComboBox<>();
+        yearSelector.setStyle("-fx-font-size: 12px; -fx-pref-width: 100px; -fx-cursor: hand;");
+        yearSelector.setOnAction(e -> {
+            Integer sel = yearSelector.getValue();
+            if (sel != null) {
+                renderYearlySummary(sel);
+                renderMonthlyChart(sel);
+            }
+        });
+        selectorBox.getChildren().addAll(yearPrompt, yearSelector);
+
+        headerRow.getChildren().addAll(trophyBox, titleBox, selectorBox);
+
+        // Grid of 6 mini-cards
+        yearlyGrid = new GridPane();
+        yearlyGrid.setHgap(16);
+        yearlyGrid.setVgap(14);
+        for (int i = 0; i < 3; i++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setPercentWidth(33.333);
+            col.setHgrow(Priority.ALWAYS);
+            yearlyGrid.getColumnConstraints().add(col);
+        }
+
+        // 1. Books Completed Card with progress bar
+        VBox b1 = new VBox(6);
+        b1.getStyleClass().add("yearly-mini-card");
+        Label t1 = new Label(I18n.get("stat.yearly_summary.books_completed"));
+        t1.getStyleClass().add("yearly-mini-title");
+        yBooksValLabel = new Label("0");
+        yBooksValLabel.getStyleClass().add("yearly-mini-value");
+        yBooksBar = new ProgressBar(0.0);
+        yBooksBar.setMaxWidth(Double.MAX_VALUE);
+        yBooksBar.setPrefHeight(6);
+        yBooksBar.getStyleClass().add("book-progress-bar");
+        yBooksSubLabel = new Label("");
+        yBooksSubLabel.getStyleClass().add("yearly-mini-sub");
+        b1.getChildren().addAll(t1, yBooksValLabel, yBooksBar, yBooksSubLabel);
+        yearlyGrid.add(b1, 0, 0);
+
+        // 2. Pages Read Card
+        VBox b2 = new VBox(6);
+        b2.getStyleClass().add("yearly-mini-card");
+        Label t2 = new Label(I18n.get("stat.yearly_summary.pages_read"));
+        t2.getStyleClass().add("yearly-mini-title");
+        yPagesValLabel = new Label("0");
+        yPagesValLabel.getStyleClass().add("yearly-mini-value");
+        yPagesSubLabel = new Label("");
+        yPagesSubLabel.getStyleClass().add("yearly-mini-sub");
+        b2.getChildren().addAll(t2, yPagesValLabel, yPagesSubLabel);
+        yearlyGrid.add(b2, 1, 0);
+
+        // 3. Time Spent Reading
+        VBox b3 = new VBox(6);
+        b3.getStyleClass().add("yearly-mini-card");
+        Label t3 = new Label(I18n.get("stat.yearly_summary.time_spent"));
+        t3.getStyleClass().add("yearly-mini-title");
+        yTimeValLabel = new Label("0m");
+        yTimeValLabel.getStyleClass().add("yearly-mini-value");
+        yTimeSubLabel = new Label("");
+        yTimeSubLabel.getStyleClass().add("yearly-mini-sub");
+        b3.getChildren().addAll(t3, yTimeValLabel, yTimeSubLabel);
+        yearlyGrid.add(b3, 2, 0);
+
+        // 4. Average Speed Card
+        VBox b4 = new VBox(6);
+        b4.getStyleClass().add("yearly-mini-card");
+        Label t4 = new Label(I18n.get("stat.yearly_summary.avg_speed"));
+        t4.getStyleClass().add("yearly-mini-title");
+        ySpeedValLabel = new Label("—");
+        ySpeedValLabel.getStyleClass().add("yearly-mini-value");
+        ySpeedSubLabel = new Label("");
+        ySpeedSubLabel.getStyleClass().add("yearly-mini-sub");
+        b4.getChildren().addAll(t4, ySpeedValLabel, ySpeedSubLabel);
+        yearlyGrid.add(b4, 0, 1);
+
+        // 5. Top Author Card
+        VBox b5 = new VBox(6);
+        b5.getStyleClass().add("yearly-mini-card");
+        Label t5 = new Label(I18n.get("stat.yearly_summary.top_author"));
+        t5.getStyleClass().add("yearly-mini-title");
+        yAuthorValLabel = new Label("—");
+        yAuthorValLabel.getStyleClass().add("yearly-mini-value");
+        yAuthorValLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 800;");
+        yAuthorSubLabel = new Label("");
+        yAuthorSubLabel.getStyleClass().add("yearly-mini-sub");
+        b5.getChildren().addAll(t5, yAuthorValLabel, yAuthorSubLabel);
+        yearlyGrid.add(b5, 1, 1);
+
+        // 6. Top Category Card
+        VBox b6 = new VBox(6);
+        b6.getStyleClass().add("yearly-mini-card");
+        Label t6 = new Label(I18n.get("stat.yearly_summary.top_category"));
+        t6.getStyleClass().add("yearly-mini-title");
+        yCategoryValLabel = new Label("—");
+        yCategoryValLabel.getStyleClass().add("yearly-mini-value");
+        yCategoryValLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 800;");
+        yCategorySubLabel = new Label("");
+        yCategorySubLabel.getStyleClass().add("yearly-mini-sub");
+        b6.getChildren().addAll(t6, yCategoryValLabel, yCategorySubLabel);
+        yearlyGrid.add(b6, 2, 1);
+
+        card.getChildren().addAll(headerRow, yearlyGrid);
+        return card;
+    }
+
+    private VBox buildMonthlyTrendsCard() {
+        VBox card = new VBox(14);
+        card.getStyleClass().add("stat-card");
+        card.setPadding(new Insets(20));
+        card.setNodeOrientation(I18n.isRTL() ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT);
+
+        // Header: Title & Segmented Control
+        HBox header = new HBox(12);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label title = new Label(I18n.get("chart.monthly_activity"));
+        title.getStyleClass().add("stat-title");
+        title.setStyle("-fx-font-size: 15px; -fx-font-weight: 700;");
+        HBox.setHgrow(title, Priority.ALWAYS);
+
+        HBox segmentedControl = new HBox(4);
+        segmentedControl.getStyleClass().add("segmented-control");
+
+        btnPagesMode = new Button(I18n.get("chart.view_pages"));
+        btnPagesMode.getStyleClass().addAll("segmented-button", "segmented-button-active");
+        btnPagesMode.setOnAction(e -> setMonthlyViewMode(MonthlyViewMode.PAGES));
+
+        btnBooksMode = new Button(I18n.get("chart.view_books"));
+        btnBooksMode.getStyleClass().add("segmented-button");
+        btnBooksMode.setOnAction(e -> setMonthlyViewMode(MonthlyViewMode.BOOKS));
+
+        btnTimeMode = new Button(I18n.get("chart.view_time"));
+        btnTimeMode.getStyleClass().add("segmented-button");
+        btnTimeMode.setOnAction(e -> setMonthlyViewMode(MonthlyViewMode.TIME));
+
+        segmentedControl.getChildren().addAll(btnPagesMode, btnBooksMode, btnTimeMode);
+        header.getChildren().addAll(title, segmentedControl);
+
+        // Bar Chart
+        monthXAxis = new CategoryAxis();
+        monthYAxis = new NumberAxis();
+        monthYAxis.setForceZeroInRange(true);
+
+        monthlyChart = new BarChart<>(monthXAxis, monthYAxis);
+        monthlyChart.setPrefHeight(270);
+        monthlyChart.setAnimated(false);
+        monthlyChart.setLegendVisible(false);
+
+        card.getChildren().addAll(header, monthlyChart);
+        return card;
+    }
+
+    private void setMonthlyViewMode(MonthlyViewMode mode) {
+        this.currentMonthlyMode = mode;
+        btnPagesMode.getStyleClass().remove("segmented-button-active");
+        btnBooksMode.getStyleClass().remove("segmented-button-active");
+        btnTimeMode.getStyleClass().remove("segmented-button-active");
+
+        switch (mode) {
+            case PAGES -> btnPagesMode.getStyleClass().add("segmented-button-active");
+            case BOOKS -> btnBooksMode.getStyleClass().add("segmented-button-active");
+            case TIME -> btnTimeMode.getStyleClass().add("segmented-button-active");
+        }
+
+        Integer yr = yearSelector.getValue();
+        renderMonthlyChart(yr != null ? yr : LocalDate.now().getYear());
+    }
+
+    private HBox buildCategoriesAndAuthorsRow() {
+        HBox row = new HBox(20);
+        row.setFillHeight(true);
+
+        // Left: Most-Read Categories
+        VBox catCard = new VBox(12);
+        catCard.getStyleClass().add("leaderboard-card");
+        catCard.setPadding(new Insets(20));
+        HBox.setHgrow(catCard, Priority.ALWAYS);
+
+        HBox catHeader = new HBox(10);
+        catHeader.setAlignment(Pos.CENTER_LEFT);
+        SVGPath tagIcon = IconUtil.createIcon(IconUtil.IconType.TAG, 16);
+        tagIcon.setStyle("-fx-fill: -accent-primary;");
+        Label catTitle = new Label(I18n.get("stat.top_categories.title"));
+        catTitle.getStyleClass().add("stat-title");
+        catTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 700;");
+        catHeader.getChildren().addAll(tagIcon, catTitle);
+
+        categoriesPieChart = new PieChart();
+        categoriesPieChart.setPrefHeight(260);
+        categoriesPieChart.setAnimated(true);
+        categoriesPieChart.setLegendVisible(true);
+
+        categoriesEmptyLabel = new Label(I18n.get("stat.top_categories.empty"));
+        categoriesEmptyLabel.getStyleClass().add("stat-subtext");
+        categoriesEmptyLabel.setAlignment(Pos.CENTER);
+        categoriesEmptyLabel.setVisible(false);
+        categoriesEmptyLabel.setManaged(false);
+
+        catCard.getChildren().addAll(catHeader, categoriesPieChart, categoriesEmptyLabel);
+
+        // Right: Most-Read Authors Leaderboard
+        VBox authorCard = new VBox(12);
+        authorCard.getStyleClass().add("leaderboard-card");
+        authorCard.setPadding(new Insets(20));
+        HBox.setHgrow(authorCard, Priority.ALWAYS);
+
+        HBox authorHeader = new HBox(10);
+        authorHeader.setAlignment(Pos.CENTER_LEFT);
+        SVGPath userIcon = IconUtil.createIcon(IconUtil.IconType.USER, 16);
+        userIcon.setStyle("-fx-fill: -accent-primary;");
+        Label authorTitle = new Label(I18n.get("stat.top_authors.title"));
+        authorTitle.getStyleClass().add("stat-title");
+        authorTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: 700;");
+        authorHeader.getChildren().addAll(userIcon, authorTitle);
+
+        topAuthorsContainer = new VBox(10);
+        authorCard.getChildren().addAll(authorHeader, topAuthorsContainer);
+
+        row.getChildren().addAll(catCard, authorCard);
+        return row;
+    }
+
     private HBox buildHabitsAndGoalsRow() {
         HBox row = new HBox(16);
         row.setFillHeight(true);
 
-        // 1. Reading Streak Card
-        streakCard = new StatCardComponent(
-                I18n.get("stat.streak"),
-                "0",
-                "",
-                IconUtil.IconType.FIRE,
-                "stat-accent-rose"
-        );
-        streakCard.setMinWidth(200);
-
-        // 2. Daily Average Card
+        // Daily Average Card
         dailyAvgCard = new StatCardComponent(
                 I18n.get("stat.daily_avg"),
                 "0",
@@ -222,13 +466,13 @@ public class DashboardController {
                 IconUtil.IconType.CLOCK,
                 "stat-accent-teal"
         );
-        dailyAvgCard.setMinWidth(200);
+        dailyAvgCard.setMinWidth(220);
 
-        // 3. Reading Goals Card
+        // Reading Goals Card
         VBox goalsCard = new VBox(12);
         goalsCard.getStyleClass().addAll("stat-card", "stat-accent-indigo");
         goalsCard.setPadding(new Insets(18, 20, 18, 20));
-        goalsCard.setMinWidth(300);
+        goalsCard.setMinWidth(320);
         HBox.setHgrow(goalsCard, Priority.ALWAYS);
 
         HBox topRow = new HBox(10);
@@ -289,7 +533,7 @@ public class DashboardController {
         goalsCard.getChildren().addAll(topRow, dailyBox, yearlyBox);
         AnimationUtil.addCardHover(goalsCard);
 
-        row.getChildren().addAll(streakCard, dailyAvgCard, goalsCard);
+        row.getChildren().addAll(dailyAvgCard, goalsCard);
         return row;
     }
 
@@ -331,32 +575,65 @@ public class DashboardController {
     public void refresh() {
         LibraryStats stats = bookService.getLibraryStatistics();
 
-        // Update cards with count animations
+        // 1. KPI Ribbon
         totalBooksCard.updateNumericValue(stats.getTotalBooks(), I18n.get("stat.total_books.sub", stats.getTotalBooks()));
-        readingCard.updateNumericValue(stats.getReadingCount(), I18n.get("stat.reading.sub"));
         completedCard.updateNumericValue(stats.getCompletedCount(), I18n.get("stat.completed.sub"));
-        notStartedCard.updateNumericValue(stats.getNotStartedCount(), I18n.get("stat.not_started.sub"));
+        pagesCard.updateNumericValue(stats.getPagesRead(), I18n.get("stat.progress.sub", stats.getPagesRead(), stats.getTotalPages()));
 
-        String pageInfo = I18n.get("stat.progress.sub", stats.getPagesRead(), stats.getTotalPages());
-        progressCard.updateTextValue(stats.getFormattedOverallProgress(), pageInfo);
+        int totalTime = readingTrackerService.getTotalReadingTimeMinutes();
+        timeCard.updateTextValue(DateUtil.formatDuration(totalTime), I18n.get("stat.reading_time.sub", DateUtil.formatDuration(totalTime)));
 
-        // 2. Update Streak & Habit Cards
+        double avgSpeed = readingTrackerService.getAverageReadingSpeedPagesPerHour();
+        speedCard.updateTextValue(DateUtil.formatReadingSpeed(avgSpeed), I18n.get("stat.reading_speed.sub"));
+
         int streak = readingTrackerService.calculateCurrentStreak();
         int bestStreak = readingTrackerService.calculateBestStreak();
         boolean readToday = readingTrackerService.hasReadToday();
-
         String streakStatus = readToday
                 ? I18n.get("stat.streak.today_read")
                 : (streak > 0 ? I18n.get("stat.streak.today_pending") : I18n.get("stat.streak.none"));
         String streakSub = streakStatus + " • " + I18n.get("stat.streak.best", bestStreak);
         streakCard.updateNumericValue(streak, streakSub);
 
+        // 2. Refresh Year Selector
+        List<Integer> years = readingTrackerService.getAllDistinctYears();
+        Integer currentSelected = yearSelector.getValue();
+        yearSelector.getItems().setAll(years);
+        if (currentSelected != null && years.contains(currentSelected)) {
+            yearSelector.setValue(currentSelected);
+        } else if (!years.isEmpty()) {
+            yearSelector.setValue(years.get(0));
+        }
+
+        int activeYear = yearSelector.getValue() != null ? yearSelector.getValue() : LocalDate.now().getYear();
+        renderYearlySummary(activeYear);
+        renderMonthlyChart(activeYear);
+
+        // 3. Refresh Top Categories
+        List<CategoryStat> topCategories = readingTrackerService.getTopCategories(6);
+        ObservableList<PieChart.Data> catPieData = FXCollections.observableArrayList();
+        for (CategoryStat cs : topCategories) {
+            if (cs.getTotalBooksCount() > 0) {
+                catPieData.add(new PieChart.Data(cs.getCategory() + " (" + cs.getTotalBooksCount() + ")", cs.getTotalBooksCount()));
+            }
+        }
+        categoriesPieChart.setData(catPieData);
+        boolean hasCats = !catPieData.isEmpty();
+        categoriesPieChart.setVisible(hasCats);
+        categoriesPieChart.setManaged(hasCats);
+        categoriesEmptyLabel.setVisible(!hasCats);
+        categoriesEmptyLabel.setManaged(!hasCats);
+
+        // 4. Refresh Top Authors Leaderboard
+        List<AuthorStat> topAuthors = readingTrackerService.getTopAuthors(5);
+        renderTopAuthors(topAuthors);
+
+        // 5. Daily Average & Goals
         double dailyAvg = readingTrackerService.calculateDailyAveragePages();
         String dailyAvgStr = String.format(Locale.US, "%.1f", dailyAvg);
         String dailyAvgSub = I18n.get("stat.daily_avg.sub", String.format(Locale.US, "%.0f", dailyAvg));
         dailyAvgCard.updateTextValue(dailyAvgStr, dailyAvgSub);
 
-        // 3. Update Goals Widget
         ReadingGoal goal = readingTrackerService.getReadingGoal();
         String dailySub = I18n.get("stat.goals.daily_sub", goal.getPagesReadToday(), goal.getDailyPagesGoal());
         if (goal.isDailyGoalAchieved()) {
@@ -372,39 +649,12 @@ public class DashboardController {
         yearlyGoalLabel.setText(yearlySub);
         AnimationUtil.animateProgressBar(yearlyGoalBar, goal.getYearlyProgressRatio());
 
-        // Visibility of empty prompt
+        // Empty prompt box visibility
         boolean isEmpty = stats.getTotalBooks() == 0;
         emptyPromptBox.setVisible(isEmpty);
         emptyPromptBox.setManaged(isEmpty);
 
-        // Update Pie Chart
-        ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList();
-        if (stats.getReadingCount() > 0) {
-            PieChart.Data d = new PieChart.Data(ReadingStatus.READING.getDisplayName() + " (" + stats.getReadingCount() + ")", stats.getReadingCount());
-            pieData.add(d);
-        }
-        if (stats.getCompletedCount() > 0) {
-            PieChart.Data d = new PieChart.Data(ReadingStatus.COMPLETED.getDisplayName() + " (" + stats.getCompletedCount() + ")", stats.getCompletedCount());
-            pieData.add(d);
-        }
-        if (stats.getNotStartedCount() > 0) {
-            PieChart.Data d = new PieChart.Data(ReadingStatus.NOT_STARTED.getDisplayName() + " (" + stats.getNotStartedCount() + ")", stats.getNotStartedCount());
-            pieData.add(d);
-        }
-        statusPieChart.setData(pieData);
-
-        // Update Bar Chart
-        progressBreakdownChart.getData().clear();
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Pages");
-        int pagesRead = stats.getPagesRead();
-        int pagesRemaining = Math.max(0, stats.getTotalPages() - pagesRead);
-        XYChart.Data<String, Number> readBar = new XYChart.Data<>(I18n.get("chart.pages_read"), pagesRead);
-        XYChart.Data<String, Number> leftBar = new XYChart.Data<>(I18n.get("chart.pages_left"), pagesRemaining);
-        series.getData().addAll(readBar, leftBar);
-        progressBreakdownChart.getData().add(series);
-
-        // Refresh Currently Reading Section
+        // 6. Currently Reading Section
         currentlyReadingSection.getChildren().clear();
         List<Book> readingBooks = bookService.getBooksByStatus(ReadingStatus.READING);
         if (readingBooks.isEmpty()) {
@@ -426,7 +676,7 @@ public class DashboardController {
             }
         }
 
-        // Refresh Recent Reading Sessions Activity Feed
+        // 7. Recent Reading Sessions Feed
         recentSessionsSection.getChildren().clear();
         List<ReadingSession> recentSessions = readingTrackerService.getRecentSessions(4);
         if (recentSessions.isEmpty()) {
@@ -440,7 +690,7 @@ public class DashboardController {
             }
         }
 
-        // Refresh Recently Added Section
+        // 8. Recently Added Section
         recentBooksSection.getChildren().clear();
         List<Book> recentBooks = stats.getRecentlyAdded();
         for (Book b : recentBooks) {
@@ -453,6 +703,145 @@ public class DashboardController {
                     this::toggleFavorite
             );
             recentBooksSection.getChildren().add(card);
+        }
+    }
+
+    private void renderYearlySummary(int year) {
+        YearlyReadingSummary summary = readingTrackerService.getYearlyReadingSummary(year);
+        yearlySubtitleLabel.setText(I18n.get("stat.yearly_summary.year", String.valueOf(year)));
+
+        // Books Completed
+        yBooksValLabel.setText(summary.getBooksCompleted() + " / " + summary.getYearlyGoal());
+        int pct = (int) (summary.getGoalProgressRatio() * 100);
+        yBooksSubLabel.setText(I18n.get("stat.yearly_summary.goal_status", summary.getBooksCompleted(), summary.getYearlyGoal(), pct));
+        AnimationUtil.animateProgressBar(yBooksBar, summary.getGoalProgressRatio());
+
+        // Pages Read
+        yPagesValLabel.setText(String.format(Locale.US, "%,d", summary.getPagesRead()));
+        yPagesSubLabel.setText(I18n.get("stat.progress.sub", summary.getPagesRead(), "—"));
+
+        // Time Spent
+        yTimeValLabel.setText(summary.getFormattedReadingTime());
+        yTimeSubLabel.setText(I18n.get("stat.reading_time.sub", summary.getFormattedReadingTime()));
+
+        // Average Speed
+        ySpeedValLabel.setText(summary.getFormattedReadingSpeed());
+        ySpeedSubLabel.setText(I18n.get("stat.reading_speed.sub"));
+
+        // Top Author
+        if (summary.getTopAuthor() != null && !summary.getTopAuthor().trim().isEmpty()) {
+            yAuthorValLabel.setText(summary.getTopAuthor());
+            yAuthorSubLabel.setText(I18n.get("stat.author.books_count", summary.getTopAuthorBooks()));
+        } else {
+            yAuthorValLabel.setText("—");
+            yAuthorSubLabel.setText(I18n.get("stat.yearly_summary.no_data"));
+        }
+
+        // Top Category
+        if (summary.getTopCategory() != null && !summary.getTopCategory().trim().isEmpty()) {
+            yCategoryValLabel.setText(summary.getTopCategory());
+            yCategorySubLabel.setText(I18n.get("stat.category.books_count", summary.getTopCategoryBooks()));
+        } else {
+            yCategoryValLabel.setText("—");
+            yCategorySubLabel.setText(I18n.get("stat.yearly_summary.no_data"));
+        }
+    }
+
+    private void renderMonthlyChart(int year) {
+        monthlyChart.getData().clear();
+        List<MonthlyReadingStat> monthlyStats = readingTrackerService.getMonthlyReadingStatsInYear(year);
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        String seriesName = switch (currentMonthlyMode) {
+            case PAGES -> I18n.get("chart.pages_per_month");
+            case BOOKS -> I18n.get("chart.books_per_month");
+            case TIME -> I18n.get("chart.time_per_month");
+        };
+        series.setName(seriesName);
+
+        for (MonthlyReadingStat stat : monthlyStats) {
+            String monthName = I18n.get("chart.month_" + stat.getMonth());
+            Number value = switch (currentMonthlyMode) {
+                case PAGES -> stat.getPagesRead();
+                case BOOKS -> stat.getBooksCompleted();
+                case TIME -> stat.getDurationMinutes();
+            };
+
+            XYChart.Data<String, Number> data = new XYChart.Data<>(monthName, value);
+            series.getData().add(data);
+        }
+
+        monthlyChart.getData().add(series);
+
+        // Add tooltips
+        for (XYChart.Data<String, Number> data : series.getData()) {
+            Node node = data.getNode();
+            if (node != null) {
+                String tip = data.getXValue() + ": " + data.getYValue() + " " + switch (currentMonthlyMode) {
+                    case PAGES -> I18n.get("chart.pages_read");
+                    case BOOKS -> I18n.get("stat.completed");
+                    case TIME -> "m";
+                };
+                Tooltip.install(node, new Tooltip(tip));
+            }
+        }
+    }
+
+    private void renderTopAuthors(List<AuthorStat> topAuthors) {
+        topAuthorsContainer.getChildren().clear();
+        if (topAuthors.isEmpty()) {
+            Label empty = new Label(I18n.get("stat.top_authors.empty"));
+            empty.getStyleClass().add("stat-subtext");
+            topAuthorsContainer.getChildren().add(empty);
+            return;
+        }
+
+        int maxPages = topAuthors.stream().mapToInt(AuthorStat::getPagesRead).max().orElse(1);
+        if (maxPages <= 0) maxPages = 1;
+
+        for (int i = 0; i < topAuthors.size(); i++) {
+            AuthorStat stat = topAuthors.get(i);
+            int rank = i + 1;
+
+            HBox item = new HBox(12);
+            item.getStyleClass().add("leaderboard-item");
+            item.setAlignment(Pos.CENTER_LEFT);
+
+            Label rankBadge = new Label("#" + rank);
+            rankBadge.getStyleClass().add("rank-badge");
+            if (rank == 1) rankBadge.getStyleClass().add("rank-badge-1");
+            else if (rank == 2) rankBadge.getStyleClass().add("rank-badge-2");
+            else if (rank == 3) rankBadge.getStyleClass().add("rank-badge-3");
+            else rankBadge.getStyleClass().add("rank-badge-default");
+
+            VBox details = new VBox(4);
+            HBox.setHgrow(details, Priority.ALWAYS);
+
+            HBox titleRow = new HBox(8);
+            titleRow.setAlignment(Pos.CENTER_LEFT);
+
+            Label nameLabel = new Label(stat.getAuthor());
+            nameLabel.setStyle("-fx-font-weight: 700; -fx-font-size: 13px; -fx-text-fill: -text-main;");
+            HBox.setHgrow(nameLabel, Priority.ALWAYS);
+
+            int displayCount = stat.getCompletedCount() > 0 ? stat.getCompletedCount() : stat.getTotalBooksCount();
+            Label booksBadge = new Label(I18n.get("stat.author.books_count", displayCount));
+            booksBadge.getStyleClass().addAll("badge-chip", "status-completed");
+
+            Label pagesBadge = new Label(I18n.get("stat.author.pages_count", stat.getPagesRead()));
+            pagesBadge.getStyleClass().add("meta-chip");
+
+            titleRow.getChildren().addAll(nameLabel, booksBadge, pagesBadge);
+
+            ProgressBar bar = new ProgressBar((double) stat.getPagesRead() / maxPages);
+            bar.setMaxWidth(Double.MAX_VALUE);
+            bar.setPrefHeight(4);
+            bar.getStyleClass().add("book-progress-bar");
+
+            details.getChildren().addAll(titleRow, bar);
+            item.getChildren().addAll(rankBadge, details);
+            AnimationUtil.addCardHover(item);
+            topAuthorsContainer.getChildren().add(item);
         }
     }
 
@@ -495,10 +884,8 @@ public class DashboardController {
         }
 
         infoBox.getChildren().addAll(titleLabel, chips);
-
         card.getChildren().addAll(dateBox, infoBox);
 
-        // On card click -> open book details
         card.setOnMouseClicked(e -> {
             bookService.getBookById(session.getBookId()).ifPresent(b -> mainController.navigateToBookDetails(b));
         });

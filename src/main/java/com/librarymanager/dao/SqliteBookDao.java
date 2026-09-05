@@ -1,16 +1,16 @@
 package com.librarymanager.dao;
 
 import com.librarymanager.database.DatabaseManager;
+import com.librarymanager.model.AuthorStat;
 import com.librarymanager.model.Book;
+import com.librarymanager.model.CategoryStat;
 import com.librarymanager.model.LibraryStats;
 import com.librarymanager.model.ReadingStatus;
 
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -433,6 +433,237 @@ public class SqliteBookDao implements BookDao {
             LOGGER.log(Level.SEVERE, "Failed to delete all books", e);
             throw new RuntimeException("Database error resetting books", e);
         }
+    }
+
+    @Override
+    public Map<Integer, Integer> getBooksCompletedByMonthInYear(int year) {
+        Map<Integer, Integer> result = new LinkedHashMap<>();
+        for (int m = 1; m <= 12; m++) {
+            result.put(m, 0);
+        }
+
+        String sql = """
+            SELECT CAST(substr(date_completed, 6, 2) AS INTEGER) AS m, count(*) AS completed_count
+            FROM books
+            WHERE status = 'COMPLETED' AND date_completed IS NOT NULL AND substr(date_completed, 1, 4) = ?
+            GROUP BY m;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int m = rs.getInt("m");
+                    int count = rs.getInt("completed_count");
+                    if (m >= 1 && m <= 12) {
+                        result.put(m, count);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get books completed by month for year: " + year, e);
+        }
+        return result;
+    }
+
+    @Override
+    public List<AuthorStat> getTopAuthors(int limit) {
+        String sql = """
+            SELECT
+                author,
+                count(CASE WHEN status = 'COMPLETED' THEN 1 ELSE NULL END) AS completed_count,
+                count(*) AS total_count,
+                COALESCE(SUM(current_page), 0) AS pages_sum
+            FROM books
+            WHERE author IS NOT NULL AND trim(author) != ''
+            GROUP BY author
+            ORDER BY completed_count DESC, pages_sum DESC, total_count DESC
+            LIMIT ?;
+            """;
+
+        List<AuthorStat> list = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, Math.max(1, limit));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new AuthorStat(
+                            rs.getString("author"),
+                            rs.getInt("completed_count"),
+                            rs.getInt("total_count"),
+                            rs.getInt("pages_sum")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load top authors", e);
+        }
+        return list;
+    }
+
+    @Override
+    public List<CategoryStat> getTopCategories(int limit) {
+        int totalBooksInLibrary = 0;
+        String countSql = "SELECT count(*) FROM books WHERE category IS NOT NULL AND trim(category) != '';";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(countSql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                totalBooksInLibrary = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to count categorized books", e);
+        }
+
+        String sql = """
+            SELECT
+                category,
+                count(CASE WHEN status = 'COMPLETED' THEN 1 ELSE NULL END) AS completed_count,
+                count(*) AS total_count,
+                COALESCE(SUM(current_page), 0) AS pages_sum
+            FROM books
+            WHERE category IS NOT NULL AND trim(category) != ''
+            GROUP BY category
+            ORDER BY completed_count DESC, pages_sum DESC, total_count DESC
+            LIMIT ?;
+            """;
+
+        List<CategoryStat> list = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, Math.max(1, limit));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int totalCount = rs.getInt("total_count");
+                    double pct = totalBooksInLibrary > 0 ? ((double) totalCount / totalBooksInLibrary) * 100.0 : 0.0;
+                    list.add(new CategoryStat(
+                            rs.getString("category"),
+                            rs.getInt("completed_count"),
+                            totalCount,
+                            rs.getInt("pages_sum"),
+                            pct
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load top categories", e);
+        }
+        return list;
+    }
+
+    @Override
+    public AuthorStat getTopAuthorInYear(int year) {
+        String sql = """
+            SELECT
+                author,
+                count(*) AS completed_count,
+                count(*) AS total_count,
+                COALESCE(SUM(total_pages), 0) AS pages_sum
+            FROM books
+            WHERE status = 'COMPLETED' AND date_completed IS NOT NULL AND substr(date_completed, 1, 4) = ? AND author IS NOT NULL AND trim(author) != ''
+            GROUP BY author
+            ORDER BY completed_count DESC, pages_sum DESC
+            LIMIT 1;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new AuthorStat(
+                            rs.getString("author"),
+                            rs.getInt("completed_count"),
+                            rs.getInt("total_count"),
+                            rs.getInt("pages_sum")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load top author for year: " + year, e);
+        }
+        return null;
+    }
+
+    @Override
+    public CategoryStat getTopCategoryInYear(int year) {
+        String sql = """
+            SELECT
+                category,
+                count(*) AS completed_count,
+                count(*) AS total_count,
+                COALESCE(SUM(total_pages), 0) AS pages_sum
+            FROM books
+            WHERE status = 'COMPLETED' AND date_completed IS NOT NULL AND substr(date_completed, 1, 4) = ? AND category IS NOT NULL AND trim(category) != ''
+            GROUP BY category
+            ORDER BY completed_count DESC, pages_sum DESC
+            LIMIT 1;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new CategoryStat(
+                            rs.getString("category"),
+                            rs.getInt("completed_count"),
+                            rs.getInt("total_count"),
+                            rs.getInt("pages_sum"),
+                            100.0
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to load top category for year: " + year, e);
+        }
+        return null;
+    }
+
+    @Override
+    public List<Integer> getDistinctCompletedYears() {
+        String sql = """
+            SELECT DISTINCT substr(date_completed, 1, 4) AS yr
+            FROM books
+            WHERE status = 'COMPLETED' AND date_completed IS NOT NULL AND length(date_completed) >= 4
+            ORDER BY yr DESC;
+            """;
+
+        List<Integer> years = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String yr = rs.getString("yr");
+                if (yr != null && !yr.trim().isEmpty()) {
+                    try {
+                        years.add(Integer.parseInt(yr.trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to fetch distinct completed years", e);
+        }
+        return years;
+    }
+
+    @Override
+    public int countBooksCompletedInYear(int year) {
+        String sql = "SELECT count(*) FROM books WHERE status = 'COMPLETED' AND date_completed IS NOT NULL AND substr(date_completed, 1, 4) = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to count books completed in year: " + year, e);
+        }
+        return 0;
     }
 
     private Book mapResultSetToBook(ResultSet rs) throws SQLException {

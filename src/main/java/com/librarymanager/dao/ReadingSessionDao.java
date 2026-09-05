@@ -4,6 +4,7 @@ import com.librarymanager.model.ReadingSession;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,4 +22,14 @@ public interface ReadingSessionDao {
     int getPagesReadOnDate(LocalDate date);
     List<LocalDate> getDistinctSessionDates();
     int countSessions();
+
+    // v1.3 Statistics & Analytics
+    int getTotalReadingTimeMinutes();
+    int getReadingTimeInYear(int year);
+    int getPagesReadInYear(int year);
+    Map<Integer, Integer> getPagesReadByMonthInYear(int year);
+    Map<Integer, Integer> getReadingTimeByMonthInYear(int year);
+    double getAverageReadingSpeedPagesPerHour();
+    double getAverageReadingSpeedPagesPerHourInYear(int year);
+    List<Integer> getDistinctYears();
 }

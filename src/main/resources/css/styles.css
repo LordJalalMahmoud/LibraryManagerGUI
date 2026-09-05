@@ -834,3 +834,124 @@
     -fx-text-fill: #ffffff;
 }
 
+/* ==========================================================================
+   v1.3 Statistics, Yearly Summary & Leaderboard Styles
+   ========================================================================== */
+.yearly-summary-card {
+    -fx-background-color: -bg-card;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-padding: 22px 24px;
+    -fx-effect: -shadow-card;
+}
+
+.yearly-mini-card {
+    -fx-background-color: -bg-hover;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-padding: 14px 16px;
+}
+
+.yearly-mini-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -text-muted;
+}
+
+.yearly-mini-value {
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text-main;
+}
+
+.yearly-mini-sub {
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -text-muted;
+}
+
+/* Leaderboard */
+.leaderboard-card {
+    -fx-background-color: -bg-card;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-padding: 20px;
+    -fx-effect: -shadow-card;
+}
+
+.leaderboard-item {
+    -fx-background-color: -bg-hover;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-padding: 10px 14px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.rank-badge {
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-alignment: CENTER;
+    -fx-min-width: 28px;
+}
+
+.rank-badge-1 {
+    -fx-background-color: rgba(234, 179, 8, 0.2);
+    -fx-text-fill: #eab308;
+}
+
+.rank-badge-2 {
+    -fx-background-color: rgba(148, 163, 184, 0.2);
+    -fx-text-fill: #94a3b8;
+}
+
+.rank-badge-3 {
+    -fx-background-color: rgba(217, 119, 6, 0.2);
+    -fx-text-fill: #d97706;
+}
+
+.rank-badge-default {
+    -fx-background-color: -bg-card;
+    -fx-text-fill: -text-muted;
+}
+
+/* Segmented Control Buttons */
+.segmented-control {
+    -fx-background-color: -bg-hover;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 3px;
+}
+
+.segmented-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 5px 12px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.segmented-button:hover {
+    -fx-text-fill: -text-main;
+}
+
+.segmented-button-active {
+    -fx-background-color: -bg-card;
+    -fx-text-fill: -accent-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+}
+
+

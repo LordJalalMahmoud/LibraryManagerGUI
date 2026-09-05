@@ -148,6 +148,16 @@ public class SampleDataService {
                 addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(2), 101, 180, 80, 75, "Comments and formatting conventions");
                 addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(1), 181, 260, 80, 70, "Objects, data structures & error handling");
                 addSessionHelper(rts, saved.getId(), LocalDate.now(), 261, 334, 74, 65, "Clean classes & cohesive modules");
+            } else if (saved.getTitle().contains("Effective Java")) {
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusMonths(2), 1, 150, 150, 120, "Generics & Enum patterns");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusMonths(1), 151, 300, 150, 110, "Lambdas, streams and exceptions");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(5), 301, 412, 112, 90, "Concurrency & serialization");
+            } else if (saved.getTitle().contains("Design Patterns")) {
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusMonths(1).minusDays(5), 1, 200, 200, 150, "Creational and Structural patterns");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(18), 201, 395, 195, 140, "Behavioral patterns & recap");
+            } else if (saved.getTitle().contains("Pragmatic")) {
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(8), 1, 80, 80, 60, "Philosophy & tracer bullets");
+                addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(6), 81, 150, 70, 50, "Orthogonality & ubiquitous language");
             } else if (saved.getTitle().contains("Designing Data-Intensive")) {
                 addSessionHelper(rts, saved.getId(), LocalDate.now().minusDays(2), 1, 120, 120, 90, "Reliability, scalability, and data models");
                 addSessionHelper(rts, saved.getId(), LocalDate.now(), 121, 260, 140, 80, "Storage engines & transaction boundaries");

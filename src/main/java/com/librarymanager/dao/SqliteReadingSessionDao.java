@@ -6,14 +6,12 @@ import com.librarymanager.model.ReadingSession;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * SQLite implementation of ReadingSessionDao.
+ * SQLite implementation of ReadingSessionDao with support for v1.3 reading analytics.
  */
 public class SqliteReadingSessionDao implements ReadingSessionDao {
     private static final Logger LOGGER = Logger.getLogger(SqliteReadingSessionDao.class.getName());
@@ -269,6 +267,201 @@ public class SqliteReadingSessionDao implements ReadingSessionDao {
             LOGGER.log(Level.WARNING, "Failed to count reading sessions", e);
         }
         return 0;
+    }
+
+    // =========================================================================
+    // v1.3 Statistics & Analytics Implementation
+    // =========================================================================
+
+    @Override
+    public int getTotalReadingTimeMinutes() {
+        String sql = "SELECT COALESCE(SUM(duration_minutes), 0) FROM reading_sessions;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to calculate total reading time", e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int getReadingTimeInYear(int year) {
+        String sql = "SELECT COALESCE(SUM(duration_minutes), 0) FROM reading_sessions WHERE substr(session_date, 1, 4) = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to calculate reading time for year: " + year, e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int getPagesReadInYear(int year) {
+        String sql = "SELECT COALESCE(SUM(pages_read), 0) FROM reading_sessions WHERE substr(session_date, 1, 4) = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to calculate pages read for year: " + year, e);
+        }
+        return 0;
+    }
+
+    @Override
+    public Map<Integer, Integer> getPagesReadByMonthInYear(int year) {
+        Map<Integer, Integer> result = new LinkedHashMap<>();
+        for (int m = 1; m <= 12; m++) {
+            result.put(m, 0);
+        }
+
+        String sql = """
+            SELECT CAST(substr(session_date, 6, 2) AS INTEGER) AS m, COALESCE(SUM(pages_read), 0) AS total_pages
+            FROM reading_sessions
+            WHERE substr(session_date, 1, 4) = ?
+            GROUP BY m;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int m = rs.getInt("m");
+                    int pages = rs.getInt("total_pages");
+                    if (m >= 1 && m <= 12) {
+                        result.put(m, pages);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get monthly pages read for year: " + year, e);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<Integer, Integer> getReadingTimeByMonthInYear(int year) {
+        Map<Integer, Integer> result = new LinkedHashMap<>();
+        for (int m = 1; m <= 12; m++) {
+            result.put(m, 0);
+        }
+
+        String sql = """
+            SELECT CAST(substr(session_date, 6, 2) AS INTEGER) AS m, COALESCE(SUM(duration_minutes), 0) AS total_time
+            FROM reading_sessions
+            WHERE substr(session_date, 1, 4) = ?
+            GROUP BY m;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    int m = rs.getInt("m");
+                    int duration = rs.getInt("total_time");
+                    if (m >= 1 && m <= 12) {
+                        result.put(m, duration);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get monthly reading time for year: " + year, e);
+        }
+        return result;
+    }
+
+    @Override
+    public double getAverageReadingSpeedPagesPerHour() {
+        String sql = """
+            SELECT COALESCE(SUM(pages_read), 0) AS total_pages, COALESCE(SUM(duration_minutes), 0) AS total_minutes
+            FROM reading_sessions
+            WHERE duration_minutes > 0 AND pages_read > 0;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                int totalPages = rs.getInt("total_pages");
+                int totalMinutes = rs.getInt("total_minutes");
+                if (totalMinutes > 0 && totalPages > 0) {
+                    return (totalPages * 60.0) / totalMinutes;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to calculate average reading speed", e);
+        }
+        return 0.0;
+    }
+
+    @Override
+    public double getAverageReadingSpeedPagesPerHourInYear(int year) {
+        String sql = """
+            SELECT COALESCE(SUM(pages_read), 0) AS total_pages, COALESCE(SUM(duration_minutes), 0) AS total_minutes
+            FROM reading_sessions
+            WHERE duration_minutes > 0 AND pages_read > 0 AND substr(session_date, 1, 4) = ?;
+            """;
+
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(year));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int totalPages = rs.getInt("total_pages");
+                    int totalMinutes = rs.getInt("total_minutes");
+                    if (totalMinutes > 0 && totalPages > 0) {
+                        return (totalPages * 60.0) / totalMinutes;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to calculate average reading speed for year: " + year, e);
+        }
+        return 0.0;
+    }
+
+    @Override
+    public List<Integer> getDistinctYears() {
+        String sql = """
+            SELECT DISTINCT substr(session_date, 1, 4) AS yr
+            FROM reading_sessions
+            WHERE session_date IS NOT NULL AND length(session_date) >= 4
+            ORDER BY yr DESC;
+            """;
+
+        List<Integer> years = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String yr = rs.getString("yr");
+                if (yr != null && !yr.trim().isEmpty()) {
+                    try {
+                        years.add(Integer.parseInt(yr.trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to fetch distinct session years", e);
+        }
+        return years;
     }
 
     private ReadingSession mapResultSetToSession(ResultSet rs) throws SQLException {

@@ -1,10 +1,7 @@
 package com.librarymanager.service;
 
 import com.librarymanager.dao.*;
-import com.librarymanager.model.Book;
-import com.librarymanager.model.ReadingGoal;
-import com.librarymanager.model.ReadingSession;
-import com.librarymanager.model.ReadingStatus;
+import com.librarymanager.model.*;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -235,13 +232,103 @@ public class ReadingTrackerService {
     }
 
     public int countBooksCompletedInYear(int year) {
-        List<Book> completedBooks = bookDao.findByStatus(ReadingStatus.COMPLETED);
-        int count = 0;
-        for (Book b : completedBooks) {
+        return bookDao.countBooksCompletedInYear(year);
+    }
+
+    // =========================================================================
+    // v1.3 Statistics & Analytics Services
+    // =========================================================================
+
+    public int getTotalReadingTimeMinutes() {
+        return readingSessionDao.getTotalReadingTimeMinutes();
+    }
+
+    public int getReadingTimeInYear(int year) {
+        return readingSessionDao.getReadingTimeInYear(year);
+    }
+
+    public int getPagesReadInYear(int year) {
+        int sessionPages = readingSessionDao.getPagesReadInYear(year);
+        if (sessionPages > 0) {
+            return sessionPages;
+        }
+        // Fallback for books marked completed without dedicated session logs
+        List<Book> completed = bookDao.findByStatus(ReadingStatus.COMPLETED);
+        int completedPages = 0;
+        for (Book b : completed) {
             if (b.getDateCompleted() != null && b.getDateCompleted().getYear() == year) {
-                count++;
+                completedPages += b.getTotalPages();
             }
         }
-        return count;
+        return Math.max(sessionPages, completedPages);
+    }
+
+    public double getAverageReadingSpeedPagesPerHour() {
+        return readingSessionDao.getAverageReadingSpeedPagesPerHour();
+    }
+
+    public double getAverageReadingSpeedPagesPerHourInYear(int year) {
+        return readingSessionDao.getAverageReadingSpeedPagesPerHourInYear(year);
+    }
+
+    public List<MonthlyReadingStat> getMonthlyReadingStatsInYear(int year) {
+        Map<Integer, Integer> booksByMonth = bookDao.getBooksCompletedByMonthInYear(year);
+        Map<Integer, Integer> pagesByMonth = readingSessionDao.getPagesReadByMonthInYear(year);
+        Map<Integer, Integer> timeByMonth = readingSessionDao.getReadingTimeByMonthInYear(year);
+
+        List<MonthlyReadingStat> stats = new ArrayList<>();
+        for (int m = 1; m <= 12; m++) {
+            int books = booksByMonth.getOrDefault(m, 0);
+            int pages = pagesByMonth.getOrDefault(m, 0);
+            int duration = timeByMonth.getOrDefault(m, 0);
+            stats.add(new MonthlyReadingStat(m, books, pages, duration));
+        }
+        return stats;
+    }
+
+    public List<AuthorStat> getTopAuthors(int limit) {
+        return bookDao.getTopAuthors(limit);
+    }
+
+    public List<CategoryStat> getTopCategories(int limit) {
+        return bookDao.getTopCategories(limit);
+    }
+
+    public List<Integer> getAllDistinctYears() {
+        Set<Integer> yearSet = new TreeSet<>(Comparator.reverseOrder());
+        yearSet.add(LocalDate.now().getYear());
+        yearSet.addAll(readingSessionDao.getDistinctYears());
+        yearSet.addAll(bookDao.getDistinctCompletedYears());
+        return new ArrayList<>(yearSet);
+    }
+
+    public YearlyReadingSummary getYearlyReadingSummary(int year) {
+        int booksCompleted = countBooksCompletedInYear(year);
+        int pagesRead = getPagesReadInYear(year);
+        int readingTime = readingSessionDao.getReadingTimeInYear(year);
+        double speed = readingSessionDao.getAverageReadingSpeedPagesPerHourInYear(year);
+
+        AuthorStat topAuthorStat = bookDao.getTopAuthorInYear(year);
+        String topAuthor = topAuthorStat != null ? topAuthorStat.getAuthor() : null;
+        int topAuthorBooks = topAuthorStat != null ? topAuthorStat.getCompletedCount() : 0;
+
+        CategoryStat topCatStat = bookDao.getTopCategoryInYear(year);
+        String topCategory = topCatStat != null ? topCatStat.getCategory() : null;
+        int topCatBooks = topCatStat != null ? topCatStat.getCompletedCount() : 0;
+
+        int yearlyGoal = settingsDao.getInt(KEY_GOAL_YEARLY_BOOKS, DEFAULT_YEARLY_BOOKS_GOAL);
+
+        return new YearlyReadingSummary(
+                year,
+                booksCompleted,
+                pagesRead,
+                readingTime,
+                speed,
+                topAuthor,
+                topAuthorBooks,
+                topCategory,
+                topCatBooks,
+                yearlyGoal
+        );
     }
 }

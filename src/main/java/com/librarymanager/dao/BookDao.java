@@ -1,10 +1,13 @@
 package com.librarymanager.dao;
 
+import com.librarymanager.model.AuthorStat;
 import com.librarymanager.model.Book;
+import com.librarymanager.model.CategoryStat;
 import com.librarymanager.model.LibraryStats;
 import com.librarymanager.model.ReadingStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,4 +33,13 @@ public interface BookDao {
 
     LibraryStats getStatistics();
     void deleteAll();
+
+    // v1.3 Analytics & Statistics
+    Map<Integer, Integer> getBooksCompletedByMonthInYear(int year);
+    List<AuthorStat> getTopAuthors(int limit);
+    List<CategoryStat> getTopCategories(int limit);
+    AuthorStat getTopAuthorInYear(int year);
+    CategoryStat getTopCategoryInYear(int year);
+    List<Integer> getDistinctCompletedYears();
+    int countBooksCompletedInYear(int year);
 }
