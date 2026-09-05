@@ -1,15 +1,16 @@
 package com.librarymanager.database;
 
+import com.librarymanager.model.DatabaseIntegrityReport;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -266,7 +267,7 @@ public class DatabaseManager {
         // Run SQLite checkpoint before copying to ensure all transactions are flushed
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute("PRAGMA wal_checkpoint(FULL);");
+            stmt.execute("PRAGMA wal_checkpoint(TRUNCATE);");
         } catch (SQLException e) {
             LOGGER.log(Level.FINE, "Checkpoint note: " + e.getMessage());
         }
@@ -294,6 +295,16 @@ public class DatabaseManager {
             throw new SQLException("Invalid library backup file: Missing books table or corrupted SQLite file.", e);
         }
 
+        // Clean up any stale wal / shm / journal files from current database before replacing
+        Path walFile = databasePath.resolveSibling(databasePath.getFileName().toString() + "-wal");
+        Path shmFile = databasePath.resolveSibling(databasePath.getFileName().toString() + "-shm");
+        Path journalFile = databasePath.resolveSibling(databasePath.getFileName().toString() + "-journal");
+        try {
+            Files.deleteIfExists(walFile);
+            Files.deleteIfExists(shmFile);
+            Files.deleteIfExists(journalFile);
+        } catch (IOException ignored) {}
+
         // Copy backup over active database file
         Files.copy(backupFile, databasePath, StandardCopyOption.REPLACE_EXISTING);
         initializeDatabase();
@@ -314,6 +325,78 @@ public class DatabaseManager {
             stmt.execute("DELETE FROM books;");
             stmt.execute("DELETE FROM sqlite_sequence WHERE name='books';");
             stmt.execute("VACUUM;");
+        }
+    }
+
+    /**
+     * Executes SQLite database integrity diagnostics and gathers health metrics.
+     */
+    public DatabaseIntegrityReport checkIntegrity() {
+        DatabaseIntegrityReport report = new DatabaseIntegrityReport();
+        List<String> errors = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // 1. PRAGMA integrity_check
+            try (ResultSet rs = stmt.executeQuery("PRAGMA integrity_check;")) {
+                if (rs.next()) {
+                    String msg = rs.getString(1);
+                    report.setIntegrityMessage(msg);
+                    if (!"ok".equalsIgnoreCase(msg)) {
+                        errors.add(msg);
+                        while (rs.next()) {
+                            errors.add(rs.getString(1));
+                        }
+                    }
+                }
+            }
+
+            // 2. PRAGMA foreign_key_check
+            int fkErrors = 0;
+            try (ResultSet rs = stmt.executeQuery("PRAGMA foreign_key_check;")) {
+                while (rs.next()) {
+                    fkErrors++;
+                    errors.add("Foreign key violation in table: " + rs.getString(1) + ", rowid: " + rs.getLong(2) + ", target: " + rs.getString(3));
+                }
+            }
+            report.setForeignKeyViolations(fkErrors);
+
+            // 3. Page stats
+            try (ResultSet rs = stmt.executeQuery("PRAGMA page_count;")) {
+                if (rs.next()) report.setPageCount(rs.getLong(1));
+            }
+            try (ResultSet rs = stmt.executeQuery("PRAGMA page_size;")) {
+                if (rs.next()) report.setPageSize(rs.getLong(1));
+            }
+            try (ResultSet rs = stmt.executeQuery("PRAGMA freelist_count;")) {
+                if (rs.next()) report.setFreePages(rs.getLong(1));
+            }
+
+            report.setFileSizeBytes(getDatabaseSizeInBytes());
+            report.setErrorDetails(errors);
+            report.setHealthy("ok".equalsIgnoreCase(report.getIntegrityMessage()) && fkErrors == 0);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Database integrity check failed", e);
+            report.setHealthy(false);
+            report.setIntegrityMessage("Error executing integrity check: " + e.getMessage());
+            errors.add(e.getMessage());
+            report.setErrorDetails(errors);
+        }
+
+        return report;
+    }
+
+    /**
+     * Defragments SQLite database, reclaims unused storage, and optimizes search indexes.
+     */
+    public void optimizeAndVacuum() throws SQLException {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA wal_checkpoint(FULL);");
+            stmt.execute("VACUUM;");
+            stmt.execute("PRAGMA optimize;");
         }
     }
 }

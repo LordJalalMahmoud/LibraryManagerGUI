@@ -14,6 +14,7 @@ public interface ChapterDao {
     void delete(long id);
     Optional<Chapter> findById(long id);
     List<Chapter> findByBookId(long bookId);
+    List<Chapter> findAll();
     void toggleCompletion(long id, boolean isCompleted);
     int countCompletedByBookId(long bookId);
     int countTotalByBookId(long bookId);

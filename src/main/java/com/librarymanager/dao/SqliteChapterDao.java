@@ -140,6 +140,23 @@ public class SqliteChapterDao implements ChapterDao {
     }
 
     @Override
+    public List<Chapter> findAll() {
+        String sql = "SELECT * FROM chapters ORDER BY book_id ASC, chapter_number ASC, id ASC;";
+        List<Chapter> list = new ArrayList<>();
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapResultSetToChapter(rs));
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to load all chapters", e);
+            throw new RuntimeException("Database error loading all chapters", e);
+        }
+        return list;
+    }
+
+    @Override
     public void toggleCompletion(long id, boolean isCompleted) {
         String sql = "UPDATE chapters SET is_completed = ? WHERE id = ?;";
         try (Connection conn = databaseManager.getConnection();

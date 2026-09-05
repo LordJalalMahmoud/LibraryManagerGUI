@@ -56,6 +56,7 @@ public class MainController extends BorderPane {
     private Button navReading;
     private Button navCompleted;
     private Button navNotStarted;
+    private Button navDataManagement;
     private Button navSettings;
     private Button currentActiveNav;
 
@@ -68,6 +69,7 @@ public class MainController extends BorderPane {
     // Active sub-controllers
     private DashboardController dashboardController;
     private LibraryController libraryController;
+    private DataManagementController dataManagementController;
     private SettingsController settingsController;
 
     private Stage primaryStage;
@@ -188,8 +190,9 @@ public class MainController extends BorderPane {
         systemSectionLabel.getStyleClass().add("nav-section-title");
         box.getChildren().add(systemSectionLabel);
 
+        navDataManagement = createNavButton(I18n.get("nav.data_management"), IconUtil.IconType.DATABASE, this::navigateToDataManagement);
         navSettings = createNavButton(I18n.get("nav.settings"), IconUtil.IconType.SETTINGS, this::navigateToSettings);
-        box.getChildren().add(navSettings);
+        box.getChildren().addAll(navDataManagement, navSettings);
 
         Region bottomPad = new Region();
         bottomPad.setPrefHeight(16);
@@ -296,6 +299,7 @@ public class MainController extends BorderPane {
             navReading.setText(I18n.get("nav.reading"));
             navCompleted.setText(I18n.get("nav.completed"));
             navNotStarted.setText(I18n.get("nav.not_started"));
+            navDataManagement.setText(I18n.get("nav.data_management"));
             navSettings.setText(I18n.get("nav.settings"));
 
             // Update Header
@@ -309,9 +313,12 @@ public class MainController extends BorderPane {
             // Invalidate controllers so they re-create views with new language
             dashboardController = null;
             libraryController = null;
+            dataManagementController = null;
             settingsController = null;
 
-            if (currentActiveNav == navSettings) {
+            if (currentActiveNav == navDataManagement) {
+                navigateToDataManagement();
+            } else if (currentActiveNav == navSettings) {
                 navigateToSettings();
             } else if (currentActiveNav == navAll || currentActiveNav == navReading || currentActiveNav == navCompleted || currentActiveNav == navNotStarted) {
                 navigateToLibrary(null);
@@ -395,6 +402,15 @@ public class MainController extends BorderPane {
         switchView(settingsController.getView(), I18n.get("header.settings.title"), I18n.get("header.settings.subtitle"));
     }
 
+    public void navigateToDataManagement() {
+        setActiveNavButton(navDataManagement);
+        if (dataManagementController == null) {
+            dataManagementController = new DataManagementController(this, backupService, settingsService);
+        }
+        dataManagementController.refresh();
+        switchView(dataManagementController.getView(), I18n.get("header.data_management.title"), I18n.get("header.data_management.subtitle"));
+    }
+
     public void openBookFormDialog(Book bookToEdit) {
         BookFormController formController = new BookFormController(this, bookService, bookToEdit);
         formController.showAsDialog(primaryStage);
@@ -412,6 +428,9 @@ public class MainController extends BorderPane {
             libraryController.refreshCategories();
             libraryController.reloadBooks();
         }
+        if (dataManagementController != null) {
+            dataManagementController.refresh();
+        }
         if (settingsController != null) {
             settingsController.refreshInfo();
         }
@@ -427,5 +446,9 @@ public class MainController extends BorderPane {
 
     public SettingsService getSettingsService() {
         return settingsService;
+    }
+
+    public BackupService getBackupService() {
+        return backupService;
     }
 }

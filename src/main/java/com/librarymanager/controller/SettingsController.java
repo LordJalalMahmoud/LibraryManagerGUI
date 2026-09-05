@@ -213,6 +213,12 @@ public class SettingsController {
         HBox backupButtons = new HBox(12);
         backupButtons.setPadding(new Insets(12, 0, 0, 0));
 
+        Button openDataMgmtBtn = new Button(I18n.get("nav.data_management"));
+        openDataMgmtBtn.getStyleClass().addAll("btn", "btn-primary");
+        openDataMgmtBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.DATABASE, 14));
+        openDataMgmtBtn.setGraphicTextGap(8);
+        openDataMgmtBtn.setOnAction(e -> mainController.navigateToDataManagement());
+
         Button exportBtn = new Button(I18n.get("settings.db.export"));
         exportBtn.getStyleClass().addAll("btn", "btn-secondary");
         exportBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.BACKUP, 14));
@@ -225,7 +231,7 @@ public class SettingsController {
         restoreBtn.setGraphicTextGap(8);
         restoreBtn.setOnAction(e -> handleRestoreBackup());
 
-        backupButtons.getChildren().addAll(exportBtn, restoreBtn);
+        backupButtons.getChildren().addAll(openDataMgmtBtn, exportBtn, restoreBtn);
         dbCard.getChildren().addAll(dbGrid, backupButtons);
         contentBox.getChildren().add(dbCard);
 

@@ -1,4 +1,4 @@
-# 📚 LibraryManager v1.4.0 — Smart Library Release 🔎
+# 📚 LibraryManager v1.5.0 — Data Management Release 💾
 
 A modern, commercial-grade personal library management desktop application built with **Java 21**, **JavaFX**, and **SQLite**.
 
@@ -9,24 +9,24 @@ All installers and standalone packages below include a **bundled, minimal custom
 ## 🚀 Downloads by Operating System
 
 ### 🐧 Linux (Ubuntu, Debian, Fedora, Arch, etc.)
-- **Debian / Ubuntu Package**: [`library-manager_1.4.0_amd64.deb`](#)
-  - *Install with:* `sudo apt install ./library-manager_1.4.0_amd64.deb`
+- **Debian / Ubuntu Package**: [`library-manager_1.5.0_amd64.deb`](#)
+  - *Install with:* `sudo apt install ./library-manager_1.5.0_amd64.deb`
   - Automatically adds `LibraryManager` to your system application menu and desktop.
-- **Portable Linux Bundle**: [`LibraryManager-1.4.0-linux-x64.tar.gz`](#)
+- **Portable Linux Bundle**: [`LibraryManager-1.5.0-linux-x64.tar.gz`](#)
   - *Run with:* extract and launch `./LibraryManager/bin/LibraryManager`
 
 ### 🪟 Windows (Windows 10 / 11)
-- **Windows Installer**: [`LibraryManager-1.4.0-windows-x64.msi`](#)
+- **Windows Installer**: [`LibraryManager-1.5.0-windows-x64.msi`](#)
   - Standard Windows MSI wizard with desktop icon and Start Menu entry.
-- **Portable Windows ZIP**: [`LibraryManager-1.4.0-windows-x64.zip`](#)
+- **Portable Windows ZIP**: [`LibraryManager-1.5.0-windows-x64.zip`](#)
   - Extract and run `LibraryManager.exe` without installation.
 
 ### 🍏 macOS (macOS 12 Monterey or later)
-- **Apple Disk Image**: [`LibraryManager-1.4.0.dmg`](#)
+- **Apple Disk Image**: [`LibraryManager-1.5.0.dmg`](#)
   - Standard macOS drag-and-drop installer into `/Applications`.
-- **Apple Package Installer**: [`LibraryManager-1.4.0.pkg`](#)
+- **Apple Package Installer**: [`LibraryManager-1.5.0.pkg`](#)
   - Guided step-by-step installer for macOS.
-- **Standalone Application Archive**: [`LibraryManager-1.4.0-macos.tar.gz`](#)
+- **Standalone Application Archive**: [`LibraryManager-1.5.0-macos.tar.gz`](#)
   - Standalone `LibraryManager.app` bundle.
 
 ---
@@ -41,7 +41,49 @@ sha256sum -c SHA256SUMS.txt
 
 ---
 
-## 🌟 What's New in v1.4.0 — Smart Library 🔎
+## 🌟 What's New in v1.5.0 — Data Management 💾
+
+### 📥 Full Library JSON Export & Import
+- **Complete Library Serialization**: Exports all books, chapters, reading sessions, saved searches, and user configuration settings into human-readable, pretty-printed JSON (`gson:2.10.1`).
+- **Flexible Import Modes**:
+  - **Merge with Existing**: Matches existing books by ISBN or Title+Author, advances reading progress, updates missing metadata, adds new books, and maps foreign keys for chapters and reading sessions.
+  - **Replace All Data**: Cleanly wipes existing tables and restores the exact library snapshot with confirmation safeguards.
+- **Automatic Pre-Import Safety Snapshot**: Automatically creates a restore point snapshot before performing any import so you can instantly revert if needed.
+
+### 📊 Excel/Numbers Friendly CSV Export
+- **Spreadsheet Compatibility**: Exports entire book collection with UTF-8 BOM (`\uFEFF`) header ensuring seamless Arabic and international character rendering in Microsoft Excel, Apple Numbers, and LibreOffice Calc.
+- **Standard RFC 4180 Escaping**: Handles commas, newlines, and double quotes cleanly across titles, authors, notes, and tags.
+
+### ⏰ Automatic Scheduled Backups
+- **Background Daemon Worker**: Automated background backup executor running periodically without blocking the UI thread.
+- **Configurable Frequencies**: Choose between `Daily (Every 24h)`, `Weekly (Every 7 days)`, or `On Application Startup`.
+- **Smart Retention Limits**: Configurable retention limits (keep latest 3, 5, 10, 20, or 50 backups) with automatic pruning of old automated snapshots while permanently safeguarding manual backups and restore points.
+
+### 📜 Backup History & Instant Rollback
+- **Comprehensive History Table**: Live list of all backups and snapshots with file names, categorized badges (`Manual`, `Scheduled Auto`, `Restore Point`, `Safety Snapshot`), formatted sizes, relative timestamps, and custom descriptions.
+- **One-Click Actions**:
+  - `[Restore]`: Instant database rollback with automatic safety snapshots before replacement.
+  - `[Export]`: Save backup file copies to external drives or custom directories.
+  - `[Delete]`: Safe removal of outdated backup snapshots with metadata cleanup.
+
+### 🛡️ Restore Points
+- **On-Demand Snapshots**: Create custom restore points with personalized notes and descriptions before major library updates.
+- **Automated Defensive Snapshots**: Automatic restore point generation before dangerous operations (JSON import, database restore, library resets).
+
+### 🩺 Database Integrity Diagnostics & VACUUM Defragmentation
+- **SQLite PRAGMA Diagnostics**: One-click health check running `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
+- **Database Metrics**: Live reporting on page count, page size (4096 bytes), and unused reclaimable freelist pages.
+- **Defragment & Optimize**: Interactive `[Optimize & Vacuum]` button executing SQLite `VACUUM` and `PRAGMA optimize` to defragment storage and reclaim free space.
+
+---
+
+## 📜 Previous Releases
+
+### v1.4.0 — Smart Library
+- Advanced multi-filter search drawer with simultaneous criteria combination.
+- Saved searches management.
+- Duplicate-book detection and merge resolution.
+- Bulk operations toolbar with card checkboxes.
 
 ### 🔎 Advanced Multi-Filter Search (Simultaneous Filtering)
 - **Simultaneous Criteria Filtering**: Status, category, tag, favorites (❤️), wishlist (🌟), author, and page count boundaries can now all be active and combined simultaneously with boolean AND logic.

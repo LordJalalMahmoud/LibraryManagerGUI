@@ -1034,5 +1034,147 @@
     -fx-text-fill: #3b82f6;
 }
 
+/* ==========================================================================
+   v1.5 Data Management: Backups, Restore Points, Diagnostics, Import/Export
+   ========================================================================== */
+
+.data-metric-card {
+    -fx-background-color: -bg-card;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 16px 20px;
+    -fx-effect: -shadow-card;
+}
+
+.data-metric-icon {
+    -fx-background-color: -accent-subtle;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px;
+    -fx-alignment: CENTER;
+}
+
+.data-metric-value {
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text-main;
+}
+
+.data-metric-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -text-muted;
+    -fx-text-transform: uppercase;
+}
+
+.data-metric-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-subtle;
+}
+
+/* Table styling for Backups & History */
+.data-table {
+    -fx-background-color: transparent;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.data-table .column-header-background {
+    -fx-background-color: -bg-surface;
+    -fx-background-radius: 8px 8px 0 0;
+    -fx-border-color: transparent transparent -border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.data-table .column-header {
+    -fx-background-color: transparent;
+    -fx-size: 38px;
+    -fx-padding: 0 10px;
+}
+
+.data-table .column-header .label {
+    -fx-text-fill: -text-muted;
+    -fx-font-weight: 700;
+    -fx-font-size: 11px;
+}
+
+.data-table .table-row-cell {
+    -fx-background-color: -bg-card;
+    -fx-border-color: transparent transparent -border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-cell-size: 46px;
+}
+
+.data-table .table-row-cell:odd {
+    -fx-background-color: -bg-surface;
+}
+
+.data-table .table-row-cell:hover {
+    -fx-background-color: -bg-hover;
+}
+
+.data-table .table-cell {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 12px;
+    -fx-text-fill: -text-main;
+}
+
+/* Badges */
+.badge-manual {
+    -fx-background-color: rgba(59, 130, 246, 0.16);
+    -fx-text-fill: #3b82f6;
+}
+
+.badge-auto {
+    -fx-background-color: rgba(16, 185, 129, 0.16);
+    -fx-text-fill: #10b981;
+}
+
+.badge-restore {
+    -fx-background-color: rgba(168, 85, 247, 0.16);
+    -fx-text-fill: #a855f7;
+}
+
+.badge-preimport {
+    -fx-background-color: rgba(245, 158, 11, 0.16);
+    -fx-text-fill: #f59e0b;
+}
+
+.badge-valid {
+    -fx-background-color: rgba(16, 185, 129, 0.16);
+    -fx-text-fill: #10b981;
+}
+
+.badge-invalid {
+    -fx-background-color: rgba(239, 68, 68, 0.16);
+    -fx-text-fill: #ef4444;
+}
+
+.btn-table-action {
+    -fx-background-color: transparent;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+}
+
+.btn-table-action:hover {
+    -fx-background-color: -bg-hover;
+}
+
+.diagnostic-item {
+    -fx-background-color: -bg-surface;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 16px;
+}
+
+
 
 
