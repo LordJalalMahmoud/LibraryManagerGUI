@@ -1,0 +1,99 @@
+/* High Contrast Theme Palette (WCAG AAA Accessibility) */
+.root {
+    /* Surfaces */
+    -bg-main: #000000;
+    -bg-sidebar: #09090b;
+    -bg-card: #121214;
+    -bg-card-elevated: #1e1e24;
+    -bg-hover: #27272a;
+    -bg-active: #3f3f46;
+    -bg-input: #09090b;
+    -bg-progress-track: #27272a;
+    -surface-border: #52525b;
+
+    /* Text */
+    -text-main: #ffffff;
+    -text-secondary: #f4f4f5;
+    -text-muted: #d4d4d8;
+    -text-subtle: #a1a1aa;
+
+    /* Borders */
+    -border-subtle: #52525b;
+    -border-hover: #ffffff;
+    -border-focus: #facc15;
+    -border-strong: #ffffff;
+
+    /* Brand Accent */
+    -accent-primary: #facc15;
+    -accent-hover: #eab308;
+    -accent-subtle: rgba(250, 204, 21, 0.25);
+    -accent-glow: rgba(250, 204, 21, 0.55);
+    -accent-gradient: linear-gradient(to right, #facc15, #f59e0b);
+
+    /* Badges */
+    -badge-notstarted-bg: #27272a;
+    -badge-notstarted-text: #ffffff;
+    -badge-notstarted-border: #a1a1aa;
+
+    -badge-reading-bg: #0369a1;
+    -badge-reading-text: #ffffff;
+    -badge-reading-border: #38bdf8;
+
+    -badge-completed-bg: #047857;
+    -badge-completed-text: #ffffff;
+    -badge-completed-border: #34d399;
+
+    -badge-fav-bg: #be123c;
+    -badge-fav-text: #ffffff;
+
+    -badge-wish-bg: #b45309;
+    -badge-wish-text: #ffffff;
+
+    /* Stat Card Accents */
+    -stat-indigo-bg: #1e1e2e;
+    -stat-indigo-icon: #facc15;
+
+    -stat-blue-bg: #082f49;
+    -stat-blue-icon: #38bdf8;
+
+    -stat-emerald-bg: #064e3b;
+    -stat-emerald-icon: #34d399;
+
+    -stat-amber-bg: #451a03;
+    -stat-amber-icon: #fbbf24;
+
+    -stat-purple-bg: #3b0764;
+    -stat-purple-icon: #c084fc;
+
+    /* Shadows */
+    -shadow-card: dropshadow(gaussian, rgba(255, 255, 255, 0.15), 6, 0, 0, 2);
+    -shadow-card-hover: dropshadow(gaussian, rgba(250, 204, 21, 0.4), 12, 0, 0, 4);
+    -shadow-popup: dropshadow(gaussian, rgba(255, 255, 255, 0.25), 16, 0, 0, 6);
+
+    /* Scrollbars */
+    -scrollbar-thumb: #71717a;
+    -scrollbar-thumb-hover: #ffffff;
+}
+
+/* High Contrast Form & Button Overrides */
+.btn-primary {
+    -fx-background-color: #facc15 !important;
+    -fx-text-fill: #000000 !important;
+    -fx-font-weight: 800 !important;
+}
+
+.btn-secondary {
+    -fx-border-color: #ffffff !important;
+    -fx-border-width: 1.5px !important;
+    -fx-text-fill: #ffffff !important;
+}
+
+.text-input, .combo-box {
+    -fx-border-color: #a1a1aa !important;
+    -fx-border-width: 1.5px !important;
+}
+
+.text-input:focused, .combo-box:focused, .btn:focused, .nav-button:focused {
+    -fx-border-color: #facc15 !important;
+    -fx-border-width: 2.5px !important;
+}

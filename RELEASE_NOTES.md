@@ -1,3 +1,90 @@
+# 📚 LibraryManager v1.6.0 — UX & Accessibility Release 🎨
+
+A modern, commercial-grade personal library management desktop application built with **Java 21**, **JavaFX**, and **SQLite**.
+
+All installers and standalone packages below include a **bundled, minimal custom Java Runtime Environment (JRE)**. **No Java installation is required on your computer.**
+
+---
+
+## 🚀 Downloads by Operating System
+
+### 🐧 Linux (Ubuntu, Debian, Fedora, Arch, etc.)
+- **Debian / Ubuntu Package**: [`library-manager_1.6.0_amd64.deb`](#)
+  - *Install with:* `sudo apt install ./library-manager_1.6.0_amd64.deb`
+  - Automatically adds `LibraryManager` to your system application menu and desktop.
+- **Portable Linux Bundle**: [`LibraryManager-1.6.0-linux-x64.tar.gz`](#)
+  - *Run with:* extract and launch `./LibraryManager/bin/LibraryManager`
+
+### 🪟 Windows (Windows 10 / 11)
+- **Windows Installer**: [`LibraryManager-1.6.0-windows-x64.msi`](#)
+  - Standard Windows MSI wizard with desktop icon and Start Menu entry.
+- **Portable Windows ZIP**: [`LibraryManager-1.6.0-windows-x64.zip`](#)
+  - Extract and run `LibraryManager.exe` without installation.
+
+### 🍏 macOS (macOS 12 Monterey or later)
+- **Apple Disk Image**: [`LibraryManager-1.6.0.dmg`](#)
+  - Standard macOS drag-and-drop installer into `/Applications`.
+- **Apple Package Installer**: [`LibraryManager-1.6.0.pkg`](#)
+  - Guided step-by-step installer for macOS.
+- **Standalone Application Archive**: [`LibraryManager-1.6.0-macos.tar.gz`](#)
+  - Standalone `LibraryManager.app` bundle.
+
+---
+
+## 🌟 What's New in v1.6.0 — UX & Accessibility 🎨
+
+### ⌨️ Comprehensive Keyboard Shortcuts Engine
+- **Global Application Accelerators**:
+  - `Ctrl + N`: Instant Add New Book modal dialog.
+  - `Ctrl + F`: Fast search navigation and focus in Library view.
+  - `Ctrl + 1` to `Ctrl + 5`: Quick-switch between Dashboard, All Books, Currently Reading, Completed, and Data Management.
+  - `Ctrl + ,`: Instant settings navigation.
+  - `Ctrl + D`: Quick theme toggle (Dark / Light / High Contrast).
+  - `Ctrl + B`: Instant one-touch manual database backup with timestamp.
+  - `Ctrl + Shift + D`: Open Dashboard Customizer dialog.
+  - `F1` or `Ctrl + /`: Interactive Keyboard Shortcuts Cheat Sheet modal dialog.
+  - `Esc`: Clear search filters or dismiss open modals.
+- **Cheat Sheet Dialog**: Interactive dialog displaying all shortcuts organized by category with stylized keyboard key badges (`.key-badge`).
+
+### 📂 Drag & Drop to Add Books & Covers
+- **Visual Drag Overlay**: Dropping files over the application window displays an elegant, translucent dashed overlay (`.drag-overlay`) with localized prompts.
+- **Smart File Detection**:
+  - **Book Files (`.pdf`, `.epub`, `.mobi`, `.txt`, `.azw3`)**: Automatically extracts title, format, and path. Dropping a single book opens the book form pre-filled; dropping multiple books batch-adds them directly to the backlog.
+  - **Cover Images (`.png`, `.jpg`, `.jpeg`, `.webp`)**: Automatically binds image as the book cover in the book dialog.
+  - **Backup Snapshots (`.json`)**: Detects exported library backups and prompts to import or merge.
+
+### ✨ Fluid Animations & Micro-Interactions
+- **Slide & Fade View Transitions**: Smooth directional sliding entrance (`AnimationUtil.slideFadeIn`) when transitioning between navigation sections.
+- **Staggered Card Entrances**: Sequential cascade animations (`staggerFadeIn`) for book cards and session feeds.
+- **Card Hover Elevation**: Subtle lift (`translateY -3px`) and shadow escalation on book cards.
+- **Form Validation Shake**: Responsive horizontal shake micro-interaction (`AnimationUtil.shake`) on save buttons when input validation errors are present.
+- **Action Pulse Feedback**: Micro-scaling pulses (`AnimationUtil.pulse`) for interactive toggles and confirmation buttons.
+
+### 🎛️ Customizable Modular Dashboard
+- **Interactive Section Reordering**: Reorder dashboard sections using Up (▲) and Down (▼) buttons in the layout customization dialog (`DashboardCustomizationDialog`).
+- **Section Visibility Toggles**: Choose exactly which widgets to show or hide:
+  - KPI Overview Cards (`METRICS`)
+  - Year in Review Summary (`YEARLY`)
+  - Monthly Reading Trends & Charts (`CHARTS`)
+  - Reading Goals & Daily Habits (`GOALS`)
+  - Currently Reading Feed (`CURRENTLY_READING`)
+  - Recent Reading Sessions (`RECENT_SESSIONS`)
+  - Recently Added Books (`RECENT_BOOKS`)
+- **Persistent Layout in SQLite**: Custom dashboard order and section visibility are stored and automatically restored across app restarts.
+- **One-Click Reset**: Instant reset button to restore default layout anytime.
+
+### 📐 Window Size & Position Memory
+- **Automatic Geometry Persistence**: Remembers window width, height, (x, y) screen coordinates, and maximized state across application sessions.
+- **Multi-Monitor Safe Restoration**: Checks saved window coordinates against all active displays (`Screen.getScreens()`) to prevent windows from opening off-screen if an external monitor was disconnected.
+
+### ♿ Accessibility & Visual Inclusion (WCAG AAA)
+- **High Contrast Theme**: High-contrast color palette (`theme-high-contrast.css`) featuring deep blacks, pure whites, and vivid yellow `#facc15` accents for enhanced readability.
+- **Dynamic Font Size Scaling**: Choose between **Normal (100%)**, **Large (115%)**, and **Extra Large (130%)** with live UI adaptation across all views.
+- **Reduce Motion Setting**: Accessibility toggle that instantaneously disables or minimizes all animations and transitions across the entire application for motion-sensitive users.
+- **High-Visibility Keyboard Focus Rings**: Prominent 2px focus indicators on all buttons, text fields, checkboxes, and navigation items for full keyboard navigation.
+
+---
+
 # 📚 LibraryManager v1.5.0 — Data Management Release 💾
 
 A modern, commercial-grade personal library management desktop application built with **Java 21**, **JavaFX**, and **SQLite**.

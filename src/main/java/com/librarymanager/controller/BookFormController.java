@@ -61,11 +61,21 @@ public class BookFormController {
 
     private Button saveButton;
 
+    private String initialTitle;
+    private String initialCoverPath;
+    private String initialDescription;
+
     public BookFormController(MainController mainController, BookService bookService, Book bookToEdit) {
         this.mainController = mainController;
         this.bookService = bookService;
         this.bookToEdit = bookToEdit;
         this.isEditMode = bookToEdit != null;
+    }
+
+    public void setInitialValues(String title, String coverPath, String description) {
+        this.initialTitle = title;
+        this.initialCoverPath = coverPath;
+        this.initialDescription = description;
     }
 
     public void showAsDialog(Stage owner) {
@@ -81,10 +91,21 @@ public class BookFormController {
 
         // Inherit application stylesheets & theme
         String baseStyle = getClass().getResource("/css/styles.css").toExternalForm();
-        String themeStyle = mainController.getSettingsService().isDarkMode()
-                ? getClass().getResource("/css/theme-dark.css").toExternalForm()
-                : getClass().getResource("/css/theme-light.css").toExternalForm();
+        String themeStyle;
+        if (mainController.getSettingsService().isHighContrast()) {
+            themeStyle = getClass().getResource("/css/theme-high-contrast.css").toExternalForm();
+        } else if (mainController.getSettingsService().isDarkMode()) {
+            themeStyle = getClass().getResource("/css/theme-dark.css").toExternalForm();
+        } else {
+            themeStyle = getClass().getResource("/css/theme-light.css").toExternalForm();
+        }
         scene.getStylesheets().addAll(themeStyle, baseStyle);
+
+        scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                dialogStage.close();
+            }
+        });
 
         dialogStage.setScene(scene);
         dialogStage.showAndWait();
@@ -278,6 +299,16 @@ public class BookFormController {
         // Populate existing data if editing
         if (isEditMode) {
             populateExistingData();
+        } else {
+            if (initialTitle != null && !initialTitle.isBlank()) {
+                titleField.setText(initialTitle);
+            }
+            if (initialCoverPath != null && !initialCoverPath.isBlank()) {
+                coverImageField.setText(initialCoverPath);
+            }
+            if (initialDescription != null && !initialDescription.isBlank()) {
+                descriptionArea.setText(initialDescription);
+            }
         }
 
         setupLiveValidation();
@@ -468,6 +499,7 @@ public class BookFormController {
     private void handleSave() {
         boolean valid = validateTitle() & validateAuthor() & validatePages() & validateParts() & validateCurrentPage() & validateIsbn();
         if (!valid) {
+            com.librarymanager.util.AnimationUtil.shake(saveButton);
             return;
         }
 

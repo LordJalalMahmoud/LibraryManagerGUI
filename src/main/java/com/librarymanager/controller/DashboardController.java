@@ -99,7 +99,16 @@ public class DashboardController {
     private FlowPane recentSessionsSection;
     private VBox recentSessionsContainer;
     private FlowPane recentBooksSection;
+    private VBox recentSectionContainer;
     private VBox emptyPromptBox;
+
+    // Modular section containers for customization
+    private HBox kpiStatsRow;
+    private VBox yearlySummaryCard;
+    private VBox monthlyActivityCard;
+    private HBox splitSection;
+    private HBox habitsRow;
+    private HBox customizeHeaderBar;
 
     public DashboardController(MainController mainController, BookService bookService, SampleDataService sampleDataService) {
         this.mainController = mainController;
@@ -124,29 +133,26 @@ public class DashboardController {
     }
 
     private void buildDashboard() {
+        // 0. Top Bar with Customize Dashboard action
+        customizeHeaderBar = buildCustomizeHeaderBar();
+
         // 1. Top KPI Statistics Ribbon (6 cards)
-        HBox statsRow = buildKpiStatsRow();
-        contentBox.getChildren().add(statsRow);
+        kpiStatsRow = buildKpiStatsRow();
 
         // 2. Empty prompt if library is empty
         emptyPromptBox = buildEmptyPromptBox();
-        contentBox.getChildren().add(emptyPromptBox);
 
         // 3. Yearly Reading Summary Card (Year in Review)
-        VBox yearlySummaryCard = buildYearlySummaryCard();
-        contentBox.getChildren().add(yearlySummaryCard);
+        yearlySummaryCard = buildYearlySummaryCard();
 
         // 4. Monthly Reading Activity & Trends Chart
-        VBox monthlyActivityCard = buildMonthlyTrendsCard();
-        contentBox.getChildren().add(monthlyActivityCard);
+        monthlyActivityCard = buildMonthlyTrendsCard();
 
         // 5. Split Row: Top Categories & Top Authors Leaderboard
-        HBox splitSection = buildCategoriesAndAuthorsRow();
-        contentBox.getChildren().add(splitSection);
+        splitSection = buildCategoriesAndAuthorsRow();
 
         // 6. Reading Habits & Goals Row
-        HBox habitsRow = buildHabitsAndGoalsRow();
-        contentBox.getChildren().add(habitsRow);
+        habitsRow = buildHabitsAndGoalsRow();
 
         // 7. Currently Reading Feed
         readingSectionContainer = new VBox(12);
@@ -158,7 +164,6 @@ public class DashboardController {
         currentlyReadingSection.setHgap(16);
         currentlyReadingSection.setVgap(16);
         readingSectionContainer.getChildren().addAll(readingHeading, currentlyReadingSection);
-        contentBox.getChildren().add(readingSectionContainer);
 
         // 8. Recent Reading Sessions Feed
         recentSessionsContainer = new VBox(12);
@@ -170,10 +175,9 @@ public class DashboardController {
         recentSessionsSection.setHgap(16);
         recentSessionsSection.setVgap(16);
         recentSessionsContainer.getChildren().addAll(sessionsHeading, recentSessionsSection);
-        contentBox.getChildren().add(recentSessionsContainer);
 
         // 9. Recently Added Books Section
-        VBox recentSectionContainer = new VBox(12);
+        recentSectionContainer = new VBox(12);
         Label recentHeading = new Label(I18n.get("dashboard.recently_added"));
         recentHeading.getStyleClass().add("stat-title");
         recentHeading.setStyle("-fx-font-size: 15px; -fx-font-weight: 700;");
@@ -182,7 +186,58 @@ public class DashboardController {
         recentBooksSection.setHgap(16);
         recentBooksSection.setVgap(16);
         recentSectionContainer.getChildren().addAll(recentHeading, recentBooksSection);
-        contentBox.getChildren().add(recentSectionContainer);
+
+        rebuildDashboardLayout();
+    }
+
+    private HBox buildCustomizeHeaderBar() {
+        HBox bar = new HBox();
+        bar.setAlignment(I18n.isRTL() ? Pos.CENTER_LEFT : Pos.CENTER_RIGHT);
+
+        Button customizeBtn = new Button(I18n.get("dashboard.customize.btn"));
+        customizeBtn.getStyleClass().addAll("btn", "btn-secondary");
+        SVGPath slidersIcon = IconUtil.createIcon(IconUtil.IconType.SETTINGS, 13);
+        customizeBtn.setGraphic(slidersIcon);
+        customizeBtn.setGraphicTextGap(6);
+        customizeBtn.setOnAction(e -> openCustomizationDialog());
+
+        bar.getChildren().add(customizeBtn);
+        return bar;
+    }
+
+    public void openCustomizationDialog() {
+        new DashboardCustomizationDialog(mainController, mainController.getSettingsService(), this)
+                .show(mainController.getPrimaryStage());
+    }
+
+    public void rebuildDashboardLayout() {
+        contentBox.getChildren().clear();
+        contentBox.getChildren().addAll(customizeHeaderBar, emptyPromptBox);
+
+        List<String> order = mainController.getSettingsService().getDashboardSectionOrder();
+        for (String section : order) {
+            if (!mainController.getSettingsService().isDashboardSectionVisible(section)) {
+                continue;
+            }
+            switch (section) {
+                case com.librarymanager.service.SettingsService.SECTION_METRICS ->
+                        contentBox.getChildren().add(kpiStatsRow);
+                case com.librarymanager.service.SettingsService.SECTION_YEARLY ->
+                        contentBox.getChildren().add(yearlySummaryCard);
+                case com.librarymanager.service.SettingsService.SECTION_CHARTS -> {
+                    contentBox.getChildren().add(monthlyActivityCard);
+                    contentBox.getChildren().add(splitSection);
+                }
+                case com.librarymanager.service.SettingsService.SECTION_GOALS ->
+                        contentBox.getChildren().add(habitsRow);
+                case com.librarymanager.service.SettingsService.SECTION_CURRENTLY_READING ->
+                        contentBox.getChildren().add(readingSectionContainer);
+                case com.librarymanager.service.SettingsService.SECTION_RECENT_SESSIONS ->
+                        contentBox.getChildren().add(recentSessionsContainer);
+                case com.librarymanager.service.SettingsService.SECTION_RECENT_BOOKS ->
+                        contentBox.getChildren().add(recentSectionContainer);
+            }
+        }
     }
 
     private HBox buildKpiStatsRow() {

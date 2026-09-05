@@ -8,6 +8,8 @@ import com.librarymanager.service.BookService;
 import com.librarymanager.service.SampleDataService;
 import com.librarymanager.service.SettingsService;
 import com.librarymanager.util.AnimationUtil;
+import com.librarymanager.util.DateUtil;
+import com.librarymanager.util.DialogUtil;
 import com.librarymanager.util.I18n;
 import com.librarymanager.util.IconUtil;
 import javafx.application.Platform;
@@ -15,14 +17,22 @@ import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +52,7 @@ public class MainController extends BorderPane {
     private HBox header;
     private StackPane contentWrapper;
     private StackPane viewContainer;
+    private StackPane dragOverlay;
     private VBox toastContainer;
     private Label pageTitleLabel;
     private Label pageSubtitleLabel;
@@ -116,10 +127,15 @@ public class MainController extends BorderPane {
         toastContainer.setPadding(new Insets(20, 24, 20, 20));
         StackPane.setAlignment(toastContainer, I18n.isRTL() ? Pos.TOP_LEFT : Pos.TOP_RIGHT);
 
-        contentWrapper.getChildren().addAll(viewContainer, toastContainer);
+        dragOverlay = buildDragOverlay();
+
+        contentWrapper.getChildren().addAll(viewContainer, dragOverlay, toastContainer);
         centerLayout.getChildren().add(contentWrapper);
 
         setCenter(centerLayout);
+
+        setupDragAndDrop();
+        setupShortcuts();
     }
 
     private void updateOrientation() {
@@ -268,7 +284,9 @@ public class MainController extends BorderPane {
     }
 
     private void updateThemeIcon() {
-        if (settingsService.isDarkMode()) {
+        if (settingsService.isHighContrast()) {
+            themeIcon = IconUtil.createIcon(IconUtil.IconType.SETTINGS, 16);
+        } else if (settingsService.isDarkMode()) {
             themeIcon = IconUtil.createIcon(IconUtil.IconType.SUN, 16);
         } else {
             themeIcon = IconUtil.createIcon(IconUtil.IconType.MOON, 16);
@@ -278,8 +296,10 @@ public class MainController extends BorderPane {
 
     private void setupThemeAndLanguageHandling() {
         applyTheme(settingsService.getTheme());
+        applyFontSizeScale(settingsService.getFontSizeScale());
         settingsService.addThemeChangeListener(this::applyTheme);
         settingsService.addLanguageChangeListener(lang -> handleLanguageChanged());
+        settingsService.addFontSizeChangeListener(this::applyFontSizeScale);
     }
 
     private void handleLanguageChanged() {
@@ -336,12 +356,29 @@ public class MainController extends BorderPane {
             if (getScene() != null) {
                 getScene().getStylesheets().clear();
                 String baseStyle = getClass().getResource("/css/styles.css").toExternalForm();
-                String themeStyle = SettingsService.THEME_LIGHT.equalsIgnoreCase(theme)
-                        ? getClass().getResource("/css/theme-light.css").toExternalForm()
-                        : getClass().getResource("/css/theme-dark.css").toExternalForm();
+                String themeStyle;
+                if (SettingsService.THEME_HIGH_CONTRAST.equalsIgnoreCase(theme)) {
+                    themeStyle = getClass().getResource("/css/theme-high-contrast.css").toExternalForm();
+                } else if (SettingsService.THEME_LIGHT.equalsIgnoreCase(theme)) {
+                    themeStyle = getClass().getResource("/css/theme-light.css").toExternalForm();
+                } else {
+                    themeStyle = getClass().getResource("/css/theme-dark.css").toExternalForm();
+                }
                 getScene().getStylesheets().addAll(themeStyle, baseStyle);
             }
             updateThemeIcon();
+        });
+    }
+
+    public void applyFontSizeScale(String scale) {
+        Platform.runLater(() -> {
+            getStyleClass().removeAll("font-scale-normal", "font-scale-large", "font-scale-extra-large");
+            String cssClass = switch (scale != null ? scale.toUpperCase() : "") {
+                case SettingsService.FONT_SCALE_LARGE -> "font-scale-large";
+                case SettingsService.FONT_SCALE_EXTRA_LARGE -> "font-scale-extra-large";
+                default -> "font-scale-normal";
+            };
+            getStyleClass().add(cssClass);
         });
     }
 
@@ -351,12 +388,12 @@ public class MainController extends BorderPane {
 
         if (viewContainer.getChildren().isEmpty()) {
             viewContainer.getChildren().setAll(newView);
-            AnimationUtil.fadeIn(newView, Duration.millis(200), null);
+            AnimationUtil.slideFadeIn(newView, Duration.millis(220), 12.0, null);
         } else {
             Node oldView = viewContainer.getChildren().get(0);
             AnimationUtil.fadeOut(oldView, Duration.millis(120), () -> {
                 viewContainer.getChildren().setAll(newView);
-                AnimationUtil.fadeIn(newView, Duration.millis(180), null);
+                AnimationUtil.slideFadeIn(newView, Duration.millis(180), 12.0, null);
             });
         }
     }
@@ -414,6 +451,204 @@ public class MainController extends BorderPane {
     public void openBookFormDialog(Book bookToEdit) {
         BookFormController formController = new BookFormController(this, bookService, bookToEdit);
         formController.showAsDialog(primaryStage);
+    }
+
+    public void openBookFormDialogWithDefaults(String title, String coverPath, String notes) {
+        BookFormController formController = new BookFormController(this, bookService, null);
+        formController.setInitialValues(title, coverPath, notes);
+        formController.showAsDialog(primaryStage);
+    }
+
+    private StackPane buildDragOverlay() {
+        StackPane overlay = new StackPane();
+        overlay.getStyleClass().add("drag-overlay");
+        overlay.setVisible(false);
+        overlay.setMouseTransparent(true);
+
+        VBox content = new VBox(14);
+        content.setAlignment(Pos.CENTER);
+
+        SVGPath dropIcon = IconUtil.createIcon(IconUtil.IconType.LIBRARY, 48);
+        dropIcon.setStyle("-fx-fill: -accent-primary;");
+
+        Label titleLabel = new Label(I18n.get("dragdrop.overlay.title"));
+        titleLabel.getStyleClass().add("drag-overlay-title");
+
+        Label subLabel = new Label(I18n.get("dragdrop.overlay.sub"));
+        subLabel.getStyleClass().add("drag-overlay-subtitle");
+
+        content.getChildren().addAll(dropIcon, titleLabel, subLabel);
+        overlay.getChildren().add(content);
+
+        return overlay;
+    }
+
+    private void setupDragAndDrop() {
+        this.setOnDragOver(event -> {
+            if (event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+                dragOverlay.setVisible(true);
+            }
+            event.consume();
+        });
+
+        this.setOnDragExited(event -> {
+            dragOverlay.setVisible(false);
+            event.consume();
+        });
+
+        this.setOnDragDropped(event -> {
+            dragOverlay.setVisible(false);
+            var db = event.getDragboard();
+            boolean success = false;
+            if (db.hasFiles()) {
+                success = true;
+                handleDroppedFiles(db.getFiles());
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
+    private void handleDroppedFiles(List<File> files) {
+        if (files == null || files.isEmpty()) return;
+
+        List<File> bookFiles = new ArrayList<>();
+        File imageFile = null;
+        File jsonBackup = null;
+
+        for (File f : files) {
+            String name = f.getName().toLowerCase();
+            if (name.endsWith(".pdf") || name.endsWith(".epub") || name.endsWith(".mobi") || name.endsWith(".txt") || name.endsWith(".azw3")) {
+                bookFiles.add(f);
+            } else if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp")) {
+                if (imageFile == null) imageFile = f;
+            } else if (name.endsWith(".json")) {
+                jsonBackup = f;
+            }
+        }
+
+        if (jsonBackup != null) {
+            final File finalJson = jsonBackup;
+            Platform.runLater(() -> {
+                boolean confirmed = DialogUtil.confirm(
+                        primaryStage,
+                        I18n.get("data.import.dialog.title"),
+                        I18n.get("dragdrop.toast.backup_detected"),
+                        "Import data snapshot from " + finalJson.getName() + "?"
+                );
+                if (confirmed) {
+                    try {
+                        var res = backupService.importJson(finalJson, false);
+                        refreshActiveViews();
+                        showToast(I18n.get("data.toast.import_json_success", res.getBooksAdded(), res.getChaptersAdded(), res.getSessionsAdded()), ToastNotification.ToastType.SUCCESS);
+                    } catch (Exception ex) {
+                        showToast("Failed to import JSON: " + ex.getMessage(), ToastNotification.ToastType.ERROR);
+                    }
+                }
+            });
+            return;
+        }
+
+        if (bookFiles.size() == 1) {
+            File f = bookFiles.get(0);
+            String title = f.getName();
+            int dot = title.lastIndexOf('.');
+            if (dot > 0) title = title.substring(0, dot);
+            String cover = imageFile != null ? imageFile.getAbsolutePath() : null;
+            openBookFormDialogWithDefaults(title, cover, "Imported file: " + f.getAbsolutePath());
+            showToast(I18n.get("dragdrop.toast.single_book"), ToastNotification.ToastType.SUCCESS);
+        } else if (bookFiles.size() > 1) {
+            int added = 0;
+            for (File f : bookFiles) {
+                String title = f.getName();
+                int dot = title.lastIndexOf('.');
+                if (dot > 0) title = title.substring(0, dot);
+                Book b = new Book();
+                b.setTitle(title);
+                b.setAuthor("Unknown Author");
+                b.setTotalPages(100);
+                b.setTotalParts(1);
+                b.setCurrentPage(0);
+                b.setStatus(ReadingStatus.NOT_STARTED);
+                b.setDescription("Imported file: " + f.getAbsolutePath());
+                if (imageFile != null) {
+                    b.setCoverImage(imageFile.getAbsolutePath());
+                }
+                bookService.addBook(b);
+                added++;
+            }
+            refreshActiveViews();
+            showToast(I18n.get("dragdrop.toast.multiple_books", added), ToastNotification.ToastType.SUCCESS);
+        } else if (imageFile != null) {
+            openBookFormDialogWithDefaults(null, imageFile.getAbsolutePath(), null);
+            showToast(I18n.get("dragdrop.toast.cover_loaded"), ToastNotification.ToastType.INFO);
+        }
+    }
+
+    private void setupShortcuts() {
+        sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                registerAccelerators(newScene);
+            }
+        });
+    }
+
+    private void registerAccelerators(Scene scene) {
+        if (scene == null) return;
+
+        // Accelerators
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN), () -> openBookFormDialog(null));
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN), this::navigateToLibraryWithSearchFocus);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT1, KeyCombination.SHORTCUT_DOWN), this::navigateToDashboard);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT2, KeyCombination.SHORTCUT_DOWN), () -> navigateToLibrary(null));
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT3, KeyCombination.SHORTCUT_DOWN), () -> navigateToLibrary(ReadingStatus.READING));
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT4, KeyCombination.SHORTCUT_DOWN), () -> navigateToLibrary(ReadingStatus.COMPLETED));
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT5, KeyCombination.SHORTCUT_DOWN), this::navigateToDataManagement);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN), this::navigateToSettings);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN), () -> {
+            settingsService.toggleTheme();
+            showToast(I18n.get("toast.theme_switched", settingsService.getTheme().toLowerCase()), ToastNotification.ToastType.INFO);
+        });
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN), this::triggerQuickBackup);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F1), this::openShortcutsDialog);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.SLASH, KeyCombination.SHORTCUT_DOWN), this::openShortcutsDialog);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN), () -> {
+            if (dashboardController != null) {
+                dashboardController.openCustomizationDialog();
+            }
+        });
+
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                if (libraryController != null) {
+                    libraryController.clearSearch();
+                }
+            }
+        });
+    }
+
+    public void triggerQuickBackup() {
+        try {
+            var backup = backupService.createBackup(com.librarymanager.model.BackupType.MANUAL, "Quick Backup (" + DateUtil.formatDateTime(LocalDateTime.now()) + ")");
+            showToast(I18n.get("data.toast.backup_created", backup.getFilename()), ToastNotification.ToastType.SUCCESS);
+            refreshActiveViews();
+        } catch (Exception e) {
+            showToast("Backup failed: " + e.getMessage(), ToastNotification.ToastType.ERROR);
+        }
+    }
+
+    public void openShortcutsDialog() {
+        new KeyboardShortcutsDialog(settingsService).show(primaryStage);
+    }
+
+    public void navigateToLibraryWithSearchFocus() {
+        navigateToLibrary(null);
+        Platform.runLater(() -> {
+            if (libraryController != null) {
+                libraryController.focusSearch();
+            }
+        });
     }
 
     public void showToast(String message, ToastNotification.ToastType type) {

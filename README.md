@@ -8,7 +8,7 @@
 [![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://openjdk.org/projects/jdk/21/)
 [![JavaFX](https://img.shields.io/badge/JavaFX-21-blue.svg)](https://openjfx.io/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-lightgrey.svg)](https://www.sqlite.org/)
-[![Tests](https://img.shields.io/badge/Tests-42%20Passed%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-61%20Passed%20(100%25)-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 > A commercial-grade, cross-platform personal library and reading management system engineered with strict **N-Tier layered architecture (SOLID)**, **automated CI/CD pipelines**, **native self-contained OS packaging**, and **full Arabic (RTL) & English localization**.
@@ -17,7 +17,7 @@
   <img src="src/main/resources/icons/app-icon.png" alt="LibraryManager Icon" width="112" style="border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
 </p>
 
-| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (42 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🏷️ **Categories, Tags, Favorites & Wishlist** |
+| ⚡ **Zero-Dependency Native Installers** | 🧪 **100% Automated Test Pass Rate (61 Tests)** | 🌍 **Full Arabic & English RTL Support** | 🏷️ **Categories, Tags, Favorites & Wishlist** |
 | :---: | :---: | :---: | :---: |
 
 ---
@@ -38,10 +38,10 @@ Download production-ready native desktop packages that run **without requiring J
 
 | OS | Format | Direct Download | Description |
 | :--- | :--- | :--- | :--- |
-| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.2.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
-| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.2.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
-| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.2.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
-| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.2.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
+| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.6.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
+| 🐧 **Linux** | Standalone Tarball | [`LibraryManager-1.6.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
+| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.6.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
+| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.6.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
 
 ---
 
@@ -94,6 +94,14 @@ Download production-ready native desktop packages that run **without requiring J
 - **Standard Desktop Storage**: SQLite database file is stored in the user's home directory (`~/.librarymanager/library.db`), completely separated from the codebase.
 - **Backup & Restore**: Single-click database file export and safe restore with schema integrity verification.
 - **Curated Sample Data**: Pre-load realistic programming classics (*Clean Code*, *Effective Java*, *The Pragmatic Programmer*) for immediate evaluation.
+
+### 7. 🎨 v1.6.0 — UX, Shortcuts, Drag & Drop & Accessibility
+- **Global Keyboard Shortcuts & Cheat Sheet**: Accelerators (`Ctrl+N`, `Ctrl+F`, `Ctrl+1..5`, `Ctrl+,`, `Ctrl+D`, `Ctrl+B`, `Ctrl+Shift+D`, `F1`, `Esc`) with interactive visual cheat sheet modal (`.key-badge`).
+- **Drag & Drop Book & Cover Import**: Effortlessly drop `.pdf`, `.epub`, `.mobi`, `.txt`, image covers, or `.json` backups with an animated visual overlay (`.drag-overlay`).
+- **Fluid Micro-Interactions & Transitions**: Smooth slide-fade view navigation, staggered card entrances, hover elevations, and validation shake feedback.
+- **Customizable Modular Dashboard**: Show, hide, and reorder dashboard sections (KPIs, Year in Review, Reading Charts, Goals, Current Reads, Sessions, Recent Books) with persistence in SQLite.
+- **Window Geometry Memory**: Automatically restores window dimensions, position, and maximized state with multi-display bounds validation.
+- **WCAG AAA Accessibility**: High Contrast theme (`theme-high-contrast.css`), dynamic font scaling (`Normal`, `Large`, `Extra Large`), Reduce Motion accessibility setting, and high-visibility keyboard focus rings.
 
 ---
 
@@ -162,10 +170,14 @@ Comprehensive unit and integration testing suite utilizing **JUnit 5**, ensuring
 | [`ChapterServiceTest`](src/test/java/com/librarymanager/service/ChapterServiceTest.java) | Chapter completion ratios, page calculations, and book progress sync | 4 | ✅ Passed |
 | [`ReadingSessionDaoTest`](src/test/java/com/librarymanager/dao/ReadingSessionDaoTest.java) | Reading session persistence, date aggregations, cascading book deletions | 5 | ✅ Passed |
 | [`ReadingTrackerServiceTest`](src/test/java/com/librarymanager/service/ReadingTrackerServiceTest.java) | Streak algorithms (current & best), daily averages, goal tracking & milestones | 9 | ✅ Passed |
-| [`SettingsServiceTest`](src/test/java/com/librarymanager/service/SettingsServiceTest.java) | Theme preferences, safety dialog flags, and language persistence | 3 | ✅ Passed |
+| [`ReadingAnalyticsTest`](src/test/java/com/librarymanager/service/ReadingAnalyticsTest.java) | Monthly trends, author leaderboards, category breakdowns, year in review | 4 | ✅ Passed |
+| [`SmartLibraryTest`](src/test/java/com/librarymanager/service/SmartLibraryTest.java) | Advanced search, saved searches, duplicate detection, bulk operations | 6 | ✅ Passed |
+| [`DataManagementTest`](src/test/java/com/librarymanager/service/DataManagementTest.java) | JSON export/import (merge & replace), CSV export, auto-backups & retention, diagnostics | 6 | ✅ Passed |
 | [`BackupServiceTest`](src/test/java/com/librarymanager/service/BackupServiceTest.java) | SQLite database file export, verification, and restore routines | 2 | ✅ Passed |
+| [`SettingsServiceTest`](src/test/java/com/librarymanager/service/SettingsServiceTest.java) | Theme preferences, safety dialog flags, and language persistence | 3 | ✅ Passed |
+| [`UxEnhancementsTest`](src/test/java/com/librarymanager/service/UxEnhancementsTest.java) | Window geometry, customizable dashboard ordering/visibility, accessibility & motion | 3 | ✅ Passed |
 | [`I18nTest`](src/test/java/com/librarymanager/util/I18nTest.java) | Bilingual bundle key parity, RTL layout resolution, parameter formatting | 3 | ✅ Passed |
-| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **42** | **✅ 100% Passed** |
+| **Total Test Suite** | **100% Automated Coverage of Domain, DAO & Services** | **61** | **✅ 100% Passed** |
 
 Execute all tests locally with:
 ```bash

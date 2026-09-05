@@ -90,4 +90,20 @@ public class SqliteSettingsDao implements SettingsDao {
     public void setInt(String key, int value) {
         set(key, Integer.toString(value));
     }
+
+    @Override
+    public double getDouble(String key, double defaultValue) {
+        return get(key).map(val -> {
+            try {
+                return Double.parseDouble(val);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }).orElse(defaultValue);
+    }
+
+    @Override
+    public void setDouble(String key, double value) {
+        set(key, Double.toString(value));
+    }
 }

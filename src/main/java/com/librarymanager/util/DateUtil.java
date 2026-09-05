@@ -49,4 +49,12 @@ public class DateUtil {
         }
         return String.format(Locale.US, "%.0f", pagesPerHour) + " " + I18n.get("stat.speed.unit");
     }
+
+    public static String formatDateTime(java.time.LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return "—";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", I18n.getCurrentLocale());
+        return dateTime.format(formatter);
+    }
 }

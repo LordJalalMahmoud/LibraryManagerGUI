@@ -42,10 +42,20 @@ public class SettingsController {
     private RadioButton arRadio;
     private RadioButton darkRadio;
     private RadioButton lightRadio;
+    private RadioButton highContrastRadio;
     private CheckBox confirmDeleteCheck;
+    private CheckBox reduceMotionCheck;
+    private ComboBox<FontSizeOption> fontSizeComboBox;
     private Label dbPathLabel;
     private Label dbSizeLabel;
     private Label totalRecordsLabel;
+
+    private record FontSizeOption(String scale, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
 
     public SettingsController(MainController mainController,
                               SettingsService settingsService,
@@ -107,13 +117,18 @@ public class SettingsController {
 
         darkRadio = new RadioButton(I18n.get("settings.theme.dark"));
         darkRadio.setToggleGroup(themeGroup);
-        darkRadio.setSelected(settingsService.isDarkMode());
+        darkRadio.setSelected(!settingsService.isHighContrast() && settingsService.isDarkMode());
         darkRadio.setStyle("-fx-text-fill: -text-main; -fx-font-weight: 500;");
 
         lightRadio = new RadioButton(I18n.get("settings.theme.light"));
         lightRadio.setToggleGroup(themeGroup);
-        lightRadio.setSelected(!settingsService.isDarkMode());
+        lightRadio.setSelected(!settingsService.isHighContrast() && !settingsService.isDarkMode());
         lightRadio.setStyle("-fx-text-fill: -text-main; -fx-font-weight: 500;");
+
+        highContrastRadio = new RadioButton(I18n.get("settings.theme.high_contrast"));
+        highContrastRadio.setToggleGroup(themeGroup);
+        highContrastRadio.setSelected(settingsService.isHighContrast());
+        highContrastRadio.setStyle("-fx-text-fill: -text-main; -fx-font-weight: 500;");
 
         themeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == darkRadio) {
@@ -122,12 +137,76 @@ public class SettingsController {
             } else if (newVal == lightRadio) {
                 settingsService.setTheme(SettingsService.THEME_LIGHT);
                 mainController.showToast(I18n.get("toast.theme_switched", "light"), ToastNotification.ToastType.INFO);
+            } else if (newVal == highContrastRadio) {
+                settingsService.setTheme(SettingsService.THEME_HIGH_CONTRAST);
+                mainController.showToast(I18n.get("toast.theme_switched", "high contrast"), ToastNotification.ToastType.INFO);
             }
         });
 
-        VBox themeOptions = new VBox(10, darkRadio, lightRadio);
+        VBox themeOptions = new VBox(10, darkRadio, lightRadio, highContrastRadio);
         appearanceCard.getChildren().add(themeOptions);
         contentBox.getChildren().add(appearanceCard);
+
+        // Accessibility & Usability Section
+        VBox a11yCard = createCard(I18n.get("settings.accessibility.title"), I18n.get("settings.accessibility.sub"));
+
+        HBox fontRow = new HBox(12);
+        fontRow.setAlignment(Pos.CENTER_LEFT);
+        Label fontLabel = new Label(I18n.get("settings.accessibility.font_size"));
+        fontLabel.setStyle("-fx-text-fill: -text-main; -fx-font-weight: 600;");
+
+        fontSizeComboBox = new ComboBox<>();
+        fontSizeComboBox.getItems().addAll(
+                new FontSizeOption(SettingsService.FONT_SCALE_NORMAL, I18n.get("settings.accessibility.font.normal")),
+                new FontSizeOption(SettingsService.FONT_SCALE_LARGE, I18n.get("settings.accessibility.font.large")),
+                new FontSizeOption(SettingsService.FONT_SCALE_EXTRA_LARGE, I18n.get("settings.accessibility.font.xlarge"))
+        );
+
+        String curScale = settingsService.getFontSizeScale();
+        for (FontSizeOption opt : fontSizeComboBox.getItems()) {
+            if (opt.scale().equalsIgnoreCase(curScale)) {
+                fontSizeComboBox.setValue(opt);
+                break;
+            }
+        }
+        if (fontSizeComboBox.getValue() == null) {
+            fontSizeComboBox.setValue(fontSizeComboBox.getItems().get(0));
+        }
+
+        fontSizeComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                settingsService.setFontSizeScale(newVal.scale());
+            }
+        });
+        fontRow.getChildren().addAll(fontLabel, fontSizeComboBox);
+
+        reduceMotionCheck = new CheckBox(I18n.get("settings.accessibility.reduce_motion"));
+        reduceMotionCheck.setSelected(settingsService.isReduceMotionEnabled());
+        reduceMotionCheck.setStyle("-fx-text-fill: -text-main; -fx-font-weight: 500;");
+        reduceMotionCheck.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            settingsService.setReduceMotion(newVal);
+            com.librarymanager.util.AnimationUtil.setReduceMotion(newVal);
+        });
+
+        HBox quickActions = new HBox(12);
+        Button shortcutsBtn = new Button(I18n.get("settings.accessibility.view_shortcuts"));
+        shortcutsBtn.getStyleClass().addAll("btn", "btn-secondary");
+        SVGPath keyIcon = IconUtil.createIcon(IconUtil.IconType.SETTINGS, 14);
+        shortcutsBtn.setGraphic(keyIcon);
+        shortcutsBtn.setOnAction(e -> mainController.openShortcutsDialog());
+
+        Button customizeDashBtn = new Button(I18n.get("settings.accessibility.customize_dash"));
+        customizeDashBtn.getStyleClass().addAll("btn", "btn-secondary");
+        SVGPath dashIcon = IconUtil.createIcon(IconUtil.IconType.DASHBOARD, 14);
+        customizeDashBtn.setGraphic(dashIcon);
+        customizeDashBtn.setOnAction(e -> {
+            new DashboardCustomizationDialog(mainController, settingsService, null).show(mainController.getPrimaryStage());
+        });
+
+        quickActions.getChildren().addAll(shortcutsBtn, customizeDashBtn);
+
+        a11yCard.getChildren().addAll(fontRow, reduceMotionCheck, quickActions);
+        contentBox.getChildren().add(a11yCard);
 
         // 3. Preferences Section
         VBox prefsCard = createCard(I18n.get("settings.prefs.title"), I18n.get("settings.prefs.sub"));
@@ -365,9 +444,13 @@ public class SettingsController {
         if (totalRecordsLabel != null) {
             totalRecordsLabel.setText(String.valueOf(bookService.getAllBooks().size()));
         }
-        if (darkRadio != null && lightRadio != null) {
-            darkRadio.setSelected(settingsService.isDarkMode());
-            lightRadio.setSelected(!settingsService.isDarkMode());
+        if (highContrastRadio != null && darkRadio != null && lightRadio != null) {
+            highContrastRadio.setSelected(settingsService.isHighContrast());
+            darkRadio.setSelected(!settingsService.isHighContrast() && settingsService.isDarkMode());
+            lightRadio.setSelected(!settingsService.isHighContrast() && !settingsService.isDarkMode());
+        }
+        if (reduceMotionCheck != null) {
+            reduceMotionCheck.setSelected(settingsService.isReduceMotionEnabled());
         }
         if (arRadio != null && enRadio != null) {
             arRadio.setSelected(settingsService.isArabic());

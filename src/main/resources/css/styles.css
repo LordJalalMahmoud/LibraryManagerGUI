@@ -1175,6 +1175,102 @@
     -fx-padding: 12px 16px;
 }
 
+/* ==========================================================================
+   v1.6 UX Enhancements
+   ========================================================================== */
+
+/* Dynamic Font Scaling */
+.font-scale-normal {
+    -fx-font-size: 13px;
+}
+
+.font-scale-large {
+    -fx-font-size: 15px;
+}
+
+.font-scale-extra-large {
+    -fx-font-size: 17px;
+}
+
+/* Accessible Focus Rings */
+.btn:focused, .nav-button:focused, .text-input:focused, .combo-box:focused, .check-box:focused, .radio-button:focused {
+    -fx-border-color: -accent-primary;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+}
+
+/* Drag & Drop Visual Overlay */
+.drag-overlay {
+    -fx-background-color: rgba(10, 14, 23, 0.88);
+    -fx-border-color: -accent-primary;
+    -fx-border-width: 3px;
+    -fx-border-style: dashed;
+    -fx-border-radius: 16px;
+    -fx-background-radius: 16px;
+    -fx-alignment: CENTER;
+    -fx-padding: 40px;
+}
+
+.drag-overlay-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text-main;
+}
+
+.drag-overlay-subtitle {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -text-muted;
+}
+
+/* Keyboard Shortcut Key Badges */
+.key-badge {
+    -fx-background-color: -bg-card-elevated;
+    -fx-border-color: -border-hover;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 3px 8px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -text-main;
+    -fx-font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Menlo, Consolas, monospace;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 2, 0, 0, 1.5);
+}
+
+.shortcut-row {
+    -fx-padding: 6px 12px;
+    -fx-background-radius: 8px;
+}
+
+.shortcut-row:hover {
+    -fx-background-color: -bg-hover;
+}
+
+.shortcut-category-header {
+    -fx-font-size: 12px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -accent-primary;
+    -fx-padding: 8px 0 4px 0;
+}
+
+/* Dashboard Customization Modal items */
+.dashboard-custom-item {
+    -fx-background-color: -bg-card;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 14px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.dashboard-custom-item:hover {
+    -fx-border-color: -border-hover;
+    -fx-background-color: -bg-card-elevated;
+}
+
+
 
 
 

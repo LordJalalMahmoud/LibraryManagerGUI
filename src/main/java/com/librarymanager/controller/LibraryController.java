@@ -930,4 +930,17 @@ public class LibraryController {
             return label;
         }
     }
+
+    public void focusSearch() {
+        if (searchField != null) {
+            searchField.requestFocus();
+            searchField.selectAll();
+        }
+    }
+
+    public void clearSearch() {
+        if (searchField != null) {
+            searchField.clear();
+        }
+    }
 }

@@ -124,4 +124,22 @@ public class DialogUtil {
 
         return dialog.showAndWait().map(String::trim).filter(s -> !s.isEmpty());
     }
+
+    public static boolean confirm(Stage owner, String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(owner);
+        alert.initModality(Modality.WINDOW_MODAL);
+        applyThemeAndOrientation(alert);
+
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+
+        ButtonType confirmButton = new ButtonType(I18n.get("dialog.confirm"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType(I18n.get("form.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(confirmButton, cancelButton);
+
+        java.util.Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == confirmButton;
+    }
 }
