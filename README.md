@@ -1,5 +1,7 @@
 # LibraryManager — Personal Library Management Desktop Application
 
+[![CI](https://github.com/LordJalalMahmoud/LibraryManagerGUI/actions/workflows/ci.yml/badge.svg)](https://github.com/LordJalalMahmoud/LibraryManagerGUI/actions/workflows/ci.yml)
+
 A modern, commercial-grade personal library management desktop application built with **Java 21**, **JavaFX**, and **SQLite**.
 
 Designed with modern desktop aesthetics (rounded cards, micro-interactions, dark & light themes, non-intrusive toast notifications, real-time search, and interactive reading tracking).
@@ -162,6 +164,13 @@ This produces an executable standalone JAR in `target/`:
 ```bash
 java -jar target/library-manager-1.0.0.jar
 ```
+
+### Continuous Integration (CI)
+This repository includes an automated GitHub Actions pipeline configured in `.github/workflows/ci.yml`. On every `git push` or pull request, the workflow automatically:
+1. Provisions an Ubuntu runner with **Java 21 (Temurin)** and Maven dependency caching.
+2. Executes all 23 unit tests (`mvn test`). If any test fails, the build fails immediately and alerts the developer.
+3. Builds the standalone fat JAR to verify package integrity.
+4. Archives test reports (`target/surefire-reports/`) as workflow artifacts.
 
 ---
 
