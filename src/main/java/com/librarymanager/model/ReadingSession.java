@@ -127,6 +127,21 @@ public class ReadingSession {
         return "—";
     }
 
+    public double getReadingSpeedPagesPerMinute() {
+        if (durationMinutes <= 0 || pagesRead <= 0) {
+            return 0.0;
+        }
+        return (double) pagesRead / (double) durationMinutes;
+    }
+
+    public String getFormattedSpeedPpm() {
+        double ppm = getReadingSpeedPagesPerMinute();
+        if (ppm <= 0.0) {
+            return "—";
+        }
+        return String.format(java.util.Locale.US, "%.1f", ppm);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

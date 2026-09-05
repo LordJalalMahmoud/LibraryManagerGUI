@@ -82,6 +82,7 @@ public class KeyboardShortcutsDialog {
         // Category 2: Actions & Books
         content.getChildren().add(createCategory(I18n.get("shortcuts.category.books"), List.of(
                 new ShortcutEntry(List.of("Ctrl", "N"), I18n.get("shortcuts.desc.add_book")),
+                new ShortcutEntry(List.of("Ctrl", "R"), I18n.get("shortcuts.desc.reading_timer")),
                 new ShortcutEntry(List.of("Ctrl", "B"), I18n.get("shortcuts.desc.backup")),
                 new ShortcutEntry(List.of("Ctrl", "Shift", "D"), I18n.get("shortcuts.desc.customize_dash"))
         )));

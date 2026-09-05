@@ -459,6 +459,37 @@ public class MainController extends BorderPane {
         formController.showAsDialog(primaryStage);
     }
 
+    public void openActiveReadingSessionDialog(Book book) {
+        if (book == null) {
+            // Pick currently reading book first, or any uncompleted book
+            List<Book> readingBooks = bookService.getBooksByStatus(ReadingStatus.READING);
+            if (!readingBooks.isEmpty()) {
+                book = readingBooks.get(0);
+            } else {
+                List<Book> allBooks = bookService.getAllBooks();
+                for (Book b : allBooks) {
+                    if (b.getStatus() != ReadingStatus.COMPLETED) {
+                        book = b;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (book == null) {
+            showToast(I18n.get("experience.no_books_to_read"), ToastNotification.ToastType.INFO);
+            return;
+        }
+
+        ActiveReadingSessionDialog dialog = new ActiveReadingSessionDialog(
+                this,
+                bookService.getReadingTrackerService(),
+                book,
+                this::refreshActiveViews
+        );
+        dialog.showAsDialog(primaryStage);
+    }
+
     private StackPane buildDragOverlay() {
         StackPane overlay = new StackPane();
         overlay.getStyleClass().add("drag-overlay");
@@ -610,6 +641,7 @@ public class MainController extends BorderPane {
             settingsService.toggleTheme();
             showToast(I18n.get("toast.theme_switched", settingsService.getTheme().toLowerCase()), ToastNotification.ToastType.INFO);
         });
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.R, KeyCombination.SHORTCUT_DOWN), () -> openActiveReadingSessionDialog(null));
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN), this::triggerQuickBackup);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F1), this::openShortcutsDialog);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.SLASH, KeyCombination.SHORTCUT_DOWN), this::openShortcutsDialog);

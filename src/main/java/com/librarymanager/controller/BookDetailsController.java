@@ -61,10 +61,9 @@ public class BookDetailsController {
     private Label chapterSummaryLabel;
     private ProgressBar chapterProgressBar;
 
-    // Reading Sessions UI elements (v1.2)
+    // Reading Sessions & Progress Timeline (v1.7)
     private VBox sessionsCard;
     private VBox sessionsListContainer;
-    private Label sessionsSummaryLabel;
 
     public BookDetailsController(MainController mainController, BookService bookService, SettingsService settingsService, Book book) {
         this.mainController = mainController;
@@ -374,13 +373,19 @@ public class BookDetailsController {
             refreshData();
         });
 
+        Button startTimerBtn = new Button(I18n.get("experience.timer.start"));
+        startTimerBtn.getStyleClass().addAll("btn", "btn-primary", "btn-sm");
+        startTimerBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.PLAY, 12));
+        startTimerBtn.setGraphicTextGap(6);
+        startTimerBtn.setOnAction(e -> openActiveReadingSessionDialog());
+
         Button logSessionBtn = new Button(I18n.get("sessions.log_button"));
         logSessionBtn.getStyleClass().addAll("btn", "btn-secondary", "btn-sm");
         logSessionBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.CLOCK, 13));
         logSessionBtn.setGraphicTextGap(6);
         logSessionBtn.setOnAction(e -> openLogSessionDialog());
 
-        controlRow.getChildren().addAll(pageLabel, pageSpinner, p1, p10, p25, completeBtn, logSessionBtn);
+        controlRow.getChildren().addAll(pageLabel, pageSpinner, p1, p10, p25, completeBtn, startTimerBtn, logSessionBtn);
 
         box.getChildren().addAll(expTitle, progressHeader, progressBar, controlRow);
         return box;
@@ -595,43 +600,118 @@ public class BookDetailsController {
     }
 
     private VBox buildSessionsCard() {
-        VBox card = new VBox(16);
+        VBox card = new VBox(18);
         card.getStyleClass().addAll("stat-card");
         card.setPadding(new Insets(24));
 
-        // Header
+        // 1. Header with title & actions
         HBox header = new HBox(16);
         header.setAlignment(Pos.CENTER_LEFT);
 
+        SVGPath timelineIcon = IconUtil.createIcon(IconUtil.IconType.SPEED, 22);
+        timelineIcon.setStyle("-fx-fill: -accent-primary;");
+
         VBox titleBox = new VBox(3);
-        Label title = new Label(I18n.get("sessions.title"));
+        Label title = new Label(I18n.get("experience.timeline.title"));
         title.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: -text-main;");
 
-        Label sub = new Label(I18n.get("sessions.subtitle"));
+        Label sub = new Label(I18n.get("experience.timeline.subtitle"));
         sub.setStyle("-fx-font-size: 12px; -fx-text-fill: -text-muted;");
         titleBox.getChildren().addAll(title, sub);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
 
-        sessionsSummaryLabel = new Label();
-        sessionsSummaryLabel.getStyleClass().addAll("badge-chip", "status-reading");
-        sessionsSummaryLabel.setStyle("-fx-font-size: 12px; -fx-font-weight: 600; -fx-padding: 4 10 4 10;");
+        Button startSessionBtn = new Button(I18n.get("experience.timeline.start_session"));
+        startSessionBtn.getStyleClass().addAll("btn", "btn-primary", "btn-sm");
+        startSessionBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.PLAY, 13));
+        startSessionBtn.setGraphicTextGap(6);
+        startSessionBtn.setOnAction(e -> openActiveReadingSessionDialog());
 
-        Button logSessionBtn = new Button(I18n.get("sessions.log_button"));
-        logSessionBtn.getStyleClass().addAll("btn", "btn-primary", "btn-sm");
-        SVGPath plusIcon = IconUtil.createIcon(IconUtil.IconType.PLUS, 13);
-        logSessionBtn.setGraphic(plusIcon);
-        logSessionBtn.setGraphicTextGap(6);
-        logSessionBtn.setOnAction(e -> openLogSessionDialog());
+        Button logPastBtn = new Button(I18n.get("experience.timeline.log_past"));
+        logPastBtn.getStyleClass().addAll("btn", "btn-secondary", "btn-sm");
+        logPastBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.PLUS, 13));
+        logPastBtn.setGraphicTextGap(6);
+        logPastBtn.setOnAction(e -> openLogSessionDialog());
 
-        header.getChildren().addAll(titleBox, sessionsSummaryLabel, logSessionBtn);
+        header.getChildren().addAll(timelineIcon, titleBox, startSessionBtn, logPastBtn);
 
-        // List Container
-        sessionsListContainer = new VBox(10);
+        // 2. Velocity & Reading KPI Overview Bar
+        HBox velocityBar = buildVelocityOverviewBar();
 
-        card.getChildren().addAll(header, sessionsListContainer);
+        // 3. Timeline Container
+        sessionsListContainer = new VBox(0);
+        sessionsListContainer.getStyleClass().add("reading-timeline");
+
+        card.getChildren().addAll(header, velocityBar, sessionsListContainer);
 
         reloadSessions();
         return card;
+    }
+
+    private HBox buildVelocityOverviewBar() {
+        HBox bar = new HBox(12);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setFillHeight(true);
+
+        long bookId = book.getId() != null ? book.getId() : 0;
+        int totalMinutes = readingTrackerService.getTotalReadingTimeMinutesForBook(bookId);
+        double speedPpm = readingTrackerService.getEffectiveReadingSpeedPpm(book);
+        int estMinutes = readingTrackerService.getEstimatedMinutesRemaining(book, speedPpm);
+        int todayPages = readingTrackerService.getPagesReadTodayForBook(bookId);
+
+        VBox tileTime = createVelocityTile(
+                I18n.get("experience.timeline.total_time"),
+                DateUtil.formatDuration(totalMinutes),
+                I18n.get("stat.reading_time.sub", DateUtil.formatDuration(totalMinutes))
+        );
+
+        VBox tileSpeed = createVelocityTile(
+                I18n.get("experience.timeline.avg_speed"),
+                String.format(java.util.Locale.US, "%.1f", speedPpm) + " " + I18n.get("experience.metric.ppm_unit"),
+                I18n.get("stat.reading_speed.sub")
+        );
+
+        String etaStr = (book.getCurrentPage() >= book.getTotalPages() && book.getTotalPages() > 0)
+                ? I18n.get("experience.metric.eta_completed")
+                : readingTrackerService.formatEstimatedRemainingTime(estMinutes);
+        int remainingPages = Math.max(0, book.getTotalPages() - book.getCurrentPage());
+        VBox tileEta = createVelocityTile(
+                I18n.get("experience.timeline.est_remaining"),
+                etaStr,
+                I18n.get("experience.metric.remaining_pages", remainingPages)
+        );
+
+        VBox tileToday = createVelocityTile(
+                I18n.get("experience.timeline.today_pages"),
+                todayPages + " " + I18n.get("details.pages_unit"),
+                I18n.get("date.today")
+        );
+
+        HBox.setHgrow(tileTime, Priority.ALWAYS);
+        HBox.setHgrow(tileSpeed, Priority.ALWAYS);
+        HBox.setHgrow(tileEta, Priority.ALWAYS);
+        HBox.setHgrow(tileToday, Priority.ALWAYS);
+
+        bar.getChildren().addAll(tileTime, tileSpeed, tileEta, tileToday);
+        return bar;
+    }
+
+    private VBox createVelocityTile(String title, String value, String sub) {
+        VBox tile = new VBox(3);
+        tile.getStyleClass().add("metric-tile");
+        tile.setPadding(new Insets(10, 14, 10, 14));
+
+        Label t = new Label(title);
+        t.getStyleClass().add("metric-tile-title");
+
+        Label v = new Label(value);
+        v.getStyleClass().add("metric-tile-value");
+        v.setStyle("-fx-font-size: 16px; -fx-font-weight: 800;");
+
+        Label s = new Label(sub);
+        s.getStyleClass().add("metric-tile-sub");
+
+        tile.getChildren().addAll(t, v, s);
+        return tile;
     }
 
     private void reloadSessions() {
@@ -640,88 +720,168 @@ public class BookDetailsController {
         List<ReadingSession> sessions = readingTrackerService.getSessionsByBookId(book.getId());
         sessionsListContainer.getChildren().clear();
 
-        int totalSessions = sessions.size();
-        int totalPages = 0;
-        for (ReadingSession s : sessions) {
-            totalPages += s.getPagesRead();
-        }
-
-        sessionsSummaryLabel.setText(I18n.get("book.card.pages", totalPages) + " • " + totalSessions + " " + I18n.get("nav.overview").toLowerCase());
-
         if (sessions.isEmpty()) {
-            VBox emptyBox = new VBox(10);
+            VBox emptyBox = new VBox(12);
             emptyBox.setAlignment(Pos.CENTER);
-            emptyBox.setPadding(new Insets(24));
-            emptyBox.setStyle("-fx-background-color: -bg-hover; -fx-background-radius: 8px; -fx-border-radius: 8px;");
+            emptyBox.setPadding(new Insets(32));
+            emptyBox.setStyle("-fx-background-color: -bg-hover; -fx-background-radius: 12px; -fx-border-radius: 12px;");
 
-            Label emptyLabel = new Label(I18n.get("sessions.empty"));
-            emptyLabel.setStyle("-fx-text-fill: -text-muted; -fx-font-weight: 500;");
+            SVGPath bookIcon = IconUtil.createIcon(IconUtil.IconType.LIBRARY, 36);
+            bookIcon.setStyle("-fx-fill: -text-muted;");
 
-            Button logBtn = new Button(I18n.get("sessions.log_button"));
-            logBtn.getStyleClass().addAll("btn", "btn-secondary", "btn-sm");
-            logBtn.setOnAction(e -> openLogSessionDialog());
+            Label emptyLabel = new Label(I18n.get("experience.timeline.empty"));
+            emptyLabel.setStyle("-fx-text-fill: -text-muted; -fx-font-weight: 600; -fx-font-size: 13px;");
 
-            emptyBox.getChildren().addAll(emptyLabel, logBtn);
+            Button startBtn = new Button(I18n.get("experience.timeline.start_session"));
+            startBtn.getStyleClass().addAll("btn", "btn-primary", "btn-sm");
+            startBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.PLAY, 13));
+            startBtn.setGraphicTextGap(6);
+            startBtn.setOnAction(e -> openActiveReadingSessionDialog());
+
+            emptyBox.getChildren().addAll(bookIcon, emptyLabel, startBtn);
             sessionsListContainer.getChildren().add(emptyBox);
-            sessionsSummaryLabel.setVisible(false);
-            sessionsSummaryLabel.setManaged(false);
         } else {
-            sessionsSummaryLabel.setVisible(true);
-            sessionsSummaryLabel.setManaged(true);
-
-            for (ReadingSession s : sessions) {
-                sessionsListContainer.getChildren().add(buildSessionRow(s));
+            for (int i = 0; i < sessions.size(); i++) {
+                boolean isLast = (i == sessions.size() - 1);
+                sessionsListContainer.getChildren().add(buildTimelineNode(sessions.get(i), i, isLast));
             }
         }
     }
 
-    private HBox buildSessionRow(ReadingSession session) {
-        HBox row = new HBox(12);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 14, 10, 14));
-        row.setStyle("-fx-background-color: -bg-card; -fx-border-color: -border-subtle; -fx-border-width: 1; -fx-background-radius: 8px; -fx-border-radius: 8px;");
+    private HBox buildTimelineNode(ReadingSession session, int index, boolean isLast) {
+        HBox nodeRow = new HBox(14);
+        nodeRow.getStyleClass().add("timeline-node-container");
+        nodeRow.setFillHeight(true);
 
-        // Date chip
+        // 1. Left Track: Pin icon & connecting vertical line
+        VBox trackCol = new VBox(0);
+        trackCol.getStyleClass().add("timeline-track-col");
+
+        StackPane pin = new StackPane();
+        pin.getStyleClass().add("timeline-pin");
+
+        boolean isCompletedMilestone = (session.getEndPage() >= book.getTotalPages() && book.getTotalPages() > 0);
+        boolean isFastMilestone = (session.getReadingSpeedPagesPerMinute() >= 1.5);
+        boolean isFirstSession = isLast; // since list is sorted DESC, last item in list was first in time
+
+        SVGPath pinIcon;
+        if (isCompletedMilestone) {
+            pin.getStyleClass().add("milestone-completed");
+            pinIcon = IconUtil.createIcon(IconUtil.IconType.TROPHY, 12);
+            pinIcon.setStyle("-fx-fill: #10b981;");
+        } else if (isFastMilestone) {
+            pin.getStyleClass().add("milestone-fast");
+            pinIcon = IconUtil.createIcon(IconUtil.IconType.FIRE, 12);
+            pinIcon.setStyle("-fx-fill: #f59e0b;");
+        } else if (isFirstSession) {
+            pin.getStyleClass().add("milestone-start");
+            pinIcon = IconUtil.createIcon(IconUtil.IconType.READING, 12);
+            pinIcon.setStyle("-fx-fill: #3b82f6;");
+        } else {
+            pinIcon = IconUtil.createIcon(IconUtil.IconType.SPEED, 12);
+            pinIcon.setStyle("-fx-fill: -accent-primary;");
+        }
+        pin.getChildren().add(pinIcon);
+        trackCol.getChildren().add(pin);
+
+        if (!isLast) {
+            Region connector = new Region();
+            connector.getStyleClass().add("timeline-connector");
+            VBox.setVgrow(connector, Priority.ALWAYS);
+            connector.setMinHeight(24);
+            trackCol.getChildren().add(connector);
+        }
+
+        // 2. Right Content: Timeline Card
+        VBox card = new VBox(8);
+        card.getStyleClass().add("timeline-card");
+        HBox.setHgrow(card, Priority.ALWAYS);
+
+        // Header line: Date, Pages, Duration, Speed, and Milestones
+        HBox cardHeader = new HBox(8);
+        cardHeader.setAlignment(Pos.CENTER_LEFT);
+
         Label dateChip = new Label("📅 " + DateUtil.format(session.getSessionDate()));
         dateChip.getStyleClass().add("meta-chip");
 
-        // Pages badge
-        Label pagesChip = new Label("+" + I18n.get("sessions.pages_read", session.getPagesRead()));
+        Label pagesChip = new Label("+" + session.getPagesRead() + " " + I18n.get("details.pages_unit"));
         pagesChip.getStyleClass().addAll("badge-chip", "status-reading");
 
-        // Range chip
         Label rangeChip = new Label(I18n.get("chapters.pages_range", session.getStartPage(), session.getEndPage()));
         rangeChip.getStyleClass().add("tag-chip");
 
-        // Duration chip
         Label durationChip = null;
         if (session.getDurationMinutes() > 0) {
             durationChip = new Label("⏱️ " + session.getFormattedDuration());
             durationChip.getStyleClass().add("tag-chip");
         }
 
-        // Notes text
-        String noteText = session.getNotes() != null ? session.getNotes().trim() : "";
-        Label noteLabel = new Label(noteText);
-        noteLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: -text-muted;");
-        noteLabel.setWrapText(true);
-        HBox.setHgrow(noteLabel, Priority.ALWAYS);
+        Label speedChip = null;
+        if (session.getReadingSpeedPagesPerMinute() > 0) {
+            speedChip = new Label("⚡ " + session.getFormattedSpeedPpm() + " " + I18n.get("experience.metric.ppm_unit"));
+            speedChip.getStyleClass().add("tag-chip");
+        }
 
-        // Delete button
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+
+        // Milestone badge if achieved
+        Label milestoneBadge = null;
+        if (isCompletedMilestone) {
+            milestoneBadge = new Label(I18n.get("experience.timeline.milestone.completed"));
+            milestoneBadge.getStyleClass().addAll("badge-chip", "status-completed");
+        } else if (isFastMilestone) {
+            milestoneBadge = new Label(I18n.get("experience.timeline.fast_pace"));
+            milestoneBadge.getStyleClass().addAll("badge-chip", "status-reading");
+        } else if (isFirstSession) {
+            milestoneBadge = new Label(I18n.get("experience.timeline.milestone.started"));
+            milestoneBadge.getStyleClass().addAll("badge-chip", "status-reading");
+        }
+
         Button deleteBtn = new Button();
         deleteBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.TRASH, 12));
         deleteBtn.getStyleClass().addAll("btn", "btn-icon-danger", "btn-sm");
         deleteBtn.setTooltip(new Tooltip(I18n.get("sessions.delete")));
         deleteBtn.setOnAction(e -> handleConfirmDeleteSession(session));
 
-        row.getChildren().addAll(dateChip, pagesChip, rangeChip);
-        if (durationChip != null) {
-            row.getChildren().add(durationChip);
-        }
-        row.getChildren().addAll(noteLabel, deleteBtn);
+        cardHeader.getChildren().addAll(dateChip, pagesChip, rangeChip);
+        if (durationChip != null) cardHeader.getChildren().add(durationChip);
+        if (speedChip != null) cardHeader.getChildren().add(speedChip);
+        if (milestoneBadge != null) cardHeader.getChildren().add(milestoneBadge);
+        cardHeader.getChildren().addAll(headerSpacer, deleteBtn);
 
-        AnimationUtil.addCardHover(row);
-        return row;
+        card.getChildren().add(cardHeader);
+
+        // Notes section if present
+        if (session.getNotes() != null && !session.getNotes().trim().isEmpty()) {
+            Label notesText = new Label("“" + session.getNotes().trim() + "”");
+            notesText.setWrapText(true);
+            notesText.setStyle("-fx-font-size: 12px; -fx-text-fill: -text-main;");
+
+            VBox notesBox = new VBox(notesText);
+            notesBox.getStyleClass().add("timeline-notes-box");
+            card.getChildren().add(notesBox);
+        }
+
+        nodeRow.getChildren().addAll(trackCol, card);
+        AnimationUtil.addCardHover(card);
+
+        // Bottom margin between timeline nodes
+        VBox.setMargin(nodeRow, new Insets(0, 0, 10, 0));
+        return nodeRow;
+    }
+
+    public void openActiveReadingSessionDialog() {
+        ActiveReadingSessionDialog dialog = new ActiveReadingSessionDialog(
+                mainController,
+                readingTrackerService,
+                book,
+                () -> {
+                    refreshData();
+                    mainController.refreshActiveViews();
+                }
+        );
+        dialog.showAsDialog(mainController.getPrimaryStage());
     }
 
     private void openLogSessionDialog() {

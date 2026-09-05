@@ -1,4 +1,4 @@
-# 📚 LibraryManager v1.6.0 — UX & Accessibility Release 🎨
+# 📚 LibraryManager v1.7.0 — Reading Experience & Interactive Companion 📖
 
 A modern, commercial-grade personal library management desktop application built with **Java 21**, **JavaFX**, and **SQLite**.
 
@@ -6,32 +6,77 @@ All installers and standalone packages below include a **bundled, minimal custom
 
 ---
 
-## 🚀 Downloads by Operating System
+## 🚀 Downloads by Operating System (v1.7.0)
 
 ### 🐧 Linux (Ubuntu, Debian, Fedora, Arch, etc.)
-- **Debian / Ubuntu Package**: [`library-manager_1.6.0_amd64.deb`](#)
-  - *Install with:* `sudo apt install ./library-manager_1.6.0_amd64.deb`
+- **Debian / Ubuntu Package**: [`library-manager_1.7.0_amd64.deb`](#)
+  - *Install with:* `sudo apt install ./library-manager_1.7.0_amd64.deb`
   - Automatically adds `LibraryManager` to your system application menu and desktop.
-- **Portable Linux Bundle**: [`LibraryManager-1.6.0-linux-x64.tar.gz`](#)
+- **Portable Linux Bundle**: [`LibraryManager-1.7.0-linux-x64.tar.gz`](#)
   - *Run with:* extract and launch `./LibraryManager/bin/LibraryManager`
 
 ### 🪟 Windows (Windows 10 / 11)
-- **Windows Installer**: [`LibraryManager-1.6.0-windows-x64.msi`](#)
+- **Windows Installer**: [`LibraryManager-1.7.0-windows-x64.msi`](#)
   - Standard Windows MSI wizard with desktop icon and Start Menu entry.
-- **Portable Windows ZIP**: [`LibraryManager-1.6.0-windows-x64.zip`](#)
+- **Portable Windows ZIP**: [`LibraryManager-1.7.0-windows-x64.zip`](#)
   - Extract and run `LibraryManager.exe` without installation.
 
 ### 🍏 macOS (macOS 12 Monterey or later)
-- **Apple Disk Image**: [`LibraryManager-1.6.0.dmg`](#)
+- **Apple Disk Image**: [`LibraryManager-1.7.0.dmg`](#)
   - Standard macOS drag-and-drop installer into `/Applications`.
-- **Apple Package Installer**: [`LibraryManager-1.6.0.pkg`](#)
+- **Apple Package Installer**: [`LibraryManager-1.7.0.pkg`](#)
   - Guided step-by-step installer for macOS.
-- **Standalone Application Archive**: [`LibraryManager-1.6.0-macos.tar.gz`](#)
+- **Standalone Application Archive**: [`LibraryManager-1.7.0-macos.tar.gz`](#)
   - Standalone `LibraryManager.app` bundle.
 
 ---
 
-## 🌟 What's New in v1.6.0 — UX & Accessibility 🎨
+## 🌟 What's New in v1.7.0 — Reading Experience 📖
+
+### ⏱️ Active Reading Companion & Stopwatch Timer
+- **Live Stopwatch**: High-precision stopwatch ticker with hours/minutes/seconds formatted cleanly (`00:00:00` or `MM:SS`).
+- **Interactive States**:
+  - `▶ Start Session`: Begins active reading timer with smooth tick animation.
+  - `⏸ Pause`: Pauses the timer and records intermediate state.
+  - `▶ Resume`: Resumes elapsed time counting from where you paused.
+  - `⏹ Finish Session`: Completes the reading session, saves to database, auto-advances the book's current page, triggers streak recalculation, and delivers celebratory feedback.
+- **Keyboard Control**: Toggle Pause / Resume instantly with the **Spacebar**; dismiss or minimize with **Escape**.
+
+### ⚡ Live Reading Speed (Pages Per Minute / PPM)
+- **Real-Time Speed Calculation**: Dynamically measures reading velocity in pages per minute (`pagesRead / elapsedMinutes`).
+- **Contextual Comparisons**: Compares live session pace against your historical average for this specific book or all-time reading speed.
+- **Speed Milestones**: Highlights fast reading pace (`🔥 Fast Pace` badge for speeds >= 1.5 PPM).
+
+### ⏳ Estimated Time to Finish (ETA Projection)
+- **Dynamic Horizon**: Projects remaining reading duration (`1h 35m`, `45m`) based on remaining unread pages (`totalPages - currentPage`) and reading velocity.
+- **Real-Time Recalculation**: Automatically adjusts ETA as you turn pages and as reading speed varies.
+- **Celebration Cue**: Displays `Completed! 🎉` when the final page is reached.
+
+### 🎯 Daily Target & Book Progress Tracker
+- **Today's Reading**: Shows pages read today specifically for the active book (e.g. `23 pages`).
+- **Goal Fulfillment**: Live indicator against global daily target (e.g. `23 / 25 pages (92%)`).
+- **Interactive Page Steppers**: One-click quick increments (`-1`, `+1`, `+5`, `+10`, `+25`, or direct input) and a `Finish Book` shortcut button.
+
+### 📈 Progress Timeline & Chronological Reading History
+- **Velocity Overview Bar**: Prominently displays 4 core KPIs for each book:
+  - Total Time Spent Reading
+  - Average Reading Speed (PPM)
+  - Estimated Time to Finish
+  - Pages Read Today
+- **Connected Milestone Timeline**:
+  - Connected vertical track pins (`.timeline-pin`, `.timeline-connector`).
+  - Milestone icons: 🚀 Started Reading, 🎯 25%, 🌟 50%, ⚡ 75%, 🏆 Book Completed, 🔥 Fast Pace.
+  - Chronological activity cards with dates, pages read, session duration, speed, study notes, and safe deletion.
+
+### 🚀 One-Click Start & Global Shortcuts
+- **Direct Card Launcher**: Quick `[▶]` timer button on cards in Library grid and Dashboard for books currently in progress.
+- **Global Shortcut**: Press `Ctrl + R` anywhere in the app to immediately start an active reading session for your current book!
+
+---
+
+## 📜 Previous Releases
+
+### 🎨 v1.6.0 — UX & Accessibility Release
 
 ### ⌨️ Comprehensive Keyboard Shortcuts Engine
 - **Global Application Accelerators**:

@@ -725,7 +725,8 @@ public class LibraryController {
                         book -> mainController.openBookFormDialog(book),
                         (comp, book) -> handleDeleteBook(comp, book),
                         book -> handleQuickAdvance(book, 10),
-                        book -> handleToggleFavorite(book)
+                        book -> handleToggleFavorite(book),
+                        book -> mainController.openActiveReadingSessionDialog(book)
                 );
 
                 if (selectedBookIds.contains(b.getId())) {

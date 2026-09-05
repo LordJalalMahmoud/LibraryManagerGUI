@@ -331,4 +331,69 @@ public class ReadingTrackerService {
                 yearlyGoal
         );
     }
+
+    // =========================================================================
+    // v1.7 Reading Experience & Timeline Services
+    // =========================================================================
+
+    public int getPagesReadTodayForBook(long bookId) {
+        return readingSessionDao.getPagesReadOnDateForBook(bookId, LocalDate.now());
+    }
+
+    public int getTotalReadingTimeMinutesForBook(long bookId) {
+        return readingSessionDao.getTotalReadingTimeMinutesForBook(bookId);
+    }
+
+    public int getTotalPagesReadForBook(long bookId) {
+        return readingSessionDao.getTotalPagesReadForBook(bookId);
+    }
+
+    /**
+     * Returns the effective reading speed in pages per minute (PPM) for a book.
+     * Uses the book's historical session speed if available.
+     * Otherwise falls back to user's overall average PPM, or a baseline of 0.8 PPM (~48 pp/hour).
+     */
+    public double getEffectiveReadingSpeedPpm(Book book) {
+        if (book != null && book.getId() != null) {
+            double bookSpeedPph = readingSessionDao.getAverageReadingSpeedPagesPerHourForBook(book.getId());
+            if (bookSpeedPph > 0) {
+                return bookSpeedPph / 60.0;
+            }
+        }
+        double overallSpeedPph = getAverageReadingSpeedPagesPerHour();
+        if (overallSpeedPph > 0) {
+            return overallSpeedPph / 60.0;
+        }
+        return 0.8;
+    }
+
+    /**
+     * Calculates estimated minutes remaining to complete the book based on remaining pages and reading velocity.
+     */
+    public int getEstimatedMinutesRemaining(Book book, double speedPpm) {
+        if (book == null) return 0;
+        int remainingPages = Math.max(0, book.getTotalPages() - book.getCurrentPage());
+        if (remainingPages <= 0) return 0;
+        double effectiveSpeed = speedPpm > 0.05 ? speedPpm : getEffectiveReadingSpeedPpm(book);
+        if (effectiveSpeed <= 0.05) effectiveSpeed = 0.8;
+        return (int) Math.max(1, Math.round(remainingPages / effectiveSpeed));
+    }
+
+    /**
+     * Formats remaining minutes into a clean localized duration string e.g. "1h 35m", "45m".
+     */
+    public String formatEstimatedRemainingTime(int minutes) {
+        if (minutes <= 0) {
+            return "0m";
+        }
+        if (minutes < 60) {
+            return minutes + "m";
+        }
+        int hours = minutes / 60;
+        int mins = minutes % 60;
+        if (mins == 0) {
+            return hours + "h";
+        }
+        return hours + "h " + mins + "m";
+    }
 }

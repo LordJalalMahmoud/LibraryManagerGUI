@@ -52,6 +52,16 @@ public class BookCardComponent extends VBox {
                              BiConsumer<BookCardComponent, Book> onDelete,
                              Consumer<Book> onQuickAdvance,
                              Consumer<Book> onToggleFavorite) {
+        this(book, onOpen, onEdit, onDelete, onQuickAdvance, onToggleFavorite, null);
+    }
+
+    public BookCardComponent(Book book,
+                             Consumer<Book> onOpen,
+                             Consumer<Book> onEdit,
+                             BiConsumer<BookCardComponent, Book> onDelete,
+                             Consumer<Book> onQuickAdvance,
+                             Consumer<Book> onToggleFavorite,
+                             Consumer<Book> onStartReadingSession) {
         this.book = book;
         getStyleClass().add("book-card");
         setSpacing(10);
@@ -227,6 +237,15 @@ public class BookCardComponent extends VBox {
             quickBtn.setTooltip(new Tooltip(I18n.get("book.card.quick_advance")));
             quickBtn.setOnAction(e -> onQuickAdvance.accept(book));
             actionBar.getChildren().add(quickBtn);
+        }
+
+        if (book.getStatus() != ReadingStatus.COMPLETED && onStartReadingSession != null) {
+            Button timerBtn = new Button();
+            timerBtn.setGraphic(IconUtil.createIcon(IconUtil.IconType.PLAY, 11));
+            timerBtn.getStyleClass().addAll("btn", "btn-icon", "btn-sm");
+            timerBtn.setTooltip(new Tooltip(I18n.get("session.start_timer_tooltip")));
+            timerBtn.setOnAction(e -> onStartReadingSession.accept(book));
+            actionBar.getChildren().add(timerBtn);
         }
 
         Button editBtn = new Button();

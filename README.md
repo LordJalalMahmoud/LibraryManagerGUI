@@ -38,10 +38,10 @@ Download production-ready native desktop packages that run **without requiring J
 
 | OS | Format | Direct Download | Description |
 | :--- | :--- | :--- | :--- |
-| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.6.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
-| 🐧 **Linux** | Standalone Tarball | [`LibraryManager-1.6.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
-| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.6.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
-| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.6.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
+| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.7.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
+| 🐧 **Linux** | Standalone Tarball | [`LibraryManager-1.7.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
+| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.7.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
+| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.7.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
 
 ---
 
@@ -102,6 +102,14 @@ Download production-ready native desktop packages that run **without requiring J
 - **Customizable Modular Dashboard**: Show, hide, and reorder dashboard sections (KPIs, Year in Review, Reading Charts, Goals, Current Reads, Sessions, Recent Books) with persistence in SQLite.
 - **Window Geometry Memory**: Automatically restores window dimensions, position, and maximized state with multi-display bounds validation.
 - **WCAG AAA Accessibility**: High Contrast theme (`theme-high-contrast.css`), dynamic font scaling (`Normal`, `Large`, `Extra Large`), Reduce Motion accessibility setting, and high-visibility keyboard focus rings.
+
+### 8. 📖 v1.7.0 — Reading Experience, Timer & Progress Timeline
+- **Interactive Reading Companion & Timer**: Live digital stopwatch with Start (`▶ Start`), Pause (`⏸ Pause`), Resume, and Finish (`⏹ Finish Session`) modes, keyboard spacebar accelerator, and glowing state indicators.
+- **Live Reading Speed (PPM)**: Real-time Pages Per Minute velocity computation during active reading, comparing current pace against historical averages.
+- **Estimated Time to Finish (ETA)**: Dynamic completion projection calculating remaining reading time (`1h 35m`, `45m`) based on unread pages and live reading speed.
+- **Daily Target & Book-Specific Tracker**: Live tracking of pages read today specifically for the active book vs. the global daily goal (e.g. `23 / 25 pages (92%)`).
+- **Visual Progress Timeline**: Chronological vertical milestones and reading timeline with connected nodes, achievement markers (🚀 Started, 🎯 25%, 🌟 50%, ⚡ 75%, 🏆 Completed, 🔥 Fast Pace), reading velocity KPI bar, and study reflection quote blocks.
+- **One-Click Read Now**: Quick `[▶]` launcher directly on library book cards and `Ctrl+R` global shortcut to resume reading immediately.
 
 ---
 

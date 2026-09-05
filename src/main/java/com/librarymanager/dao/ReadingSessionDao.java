@@ -32,4 +32,10 @@ public interface ReadingSessionDao {
     double getAverageReadingSpeedPagesPerHour();
     double getAverageReadingSpeedPagesPerHourInYear(int year);
     List<Integer> getDistinctYears();
+
+    // v1.7 Reading Experience & Timeline Analytics
+    int getPagesReadOnDateForBook(long bookId, LocalDate date);
+    int getTotalReadingTimeMinutesForBook(long bookId);
+    int getTotalPagesReadForBook(long bookId);
+    double getAverageReadingSpeedPagesPerHourForBook(long bookId);
 }

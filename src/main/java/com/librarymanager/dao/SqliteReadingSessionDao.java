@@ -464,6 +464,80 @@ public class SqliteReadingSessionDao implements ReadingSessionDao {
         return years;
     }
 
+    @Override
+    public int getPagesReadOnDateForBook(long bookId, LocalDate date) {
+        if (date == null) return 0;
+        String sql = "SELECT COALESCE(SUM(pages_read), 0) FROM reading_sessions WHERE book_id = ? AND session_date = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, bookId);
+            stmt.setString(2, date.format(DATE_FORMATTER));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get pages read for book " + bookId + " on date: " + date, e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int getTotalReadingTimeMinutesForBook(long bookId) {
+        String sql = "SELECT COALESCE(SUM(duration_minutes), 0) FROM reading_sessions WHERE book_id = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, bookId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get reading time for book: " + bookId, e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int getTotalPagesReadForBook(long bookId) {
+        String sql = "SELECT COALESCE(SUM(pages_read), 0) FROM reading_sessions WHERE book_id = ?;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, bookId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get total pages read for book: " + bookId, e);
+        }
+        return 0;
+    }
+
+    @Override
+    public double getAverageReadingSpeedPagesPerHourForBook(long bookId) {
+        String sql = "SELECT SUM(pages_read), SUM(duration_minutes) FROM reading_sessions WHERE book_id = ? AND duration_minutes > 0;";
+        try (Connection conn = databaseManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, bookId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int pages = rs.getInt(1);
+                    int minutes = rs.getInt(2);
+                    if (minutes > 0 && pages > 0) {
+                        return ((double) pages / (double) minutes) * 60.0;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "Failed to get reading speed for book: " + bookId, e);
+        }
+        return 0.0;
+    }
+
     private ReadingSession mapResultSetToSession(ResultSet rs) throws SQLException {
         ReadingSession session = new ReadingSession();
         session.setId(rs.getLong("id"));

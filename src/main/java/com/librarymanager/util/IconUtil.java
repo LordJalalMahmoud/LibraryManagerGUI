@@ -44,7 +44,10 @@ public class IconUtil {
         SHIELD_CHECK("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"),
         EXPORT_FILE("M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 18v-6 M9 15l3 3 3-3"),
         IMPORT_FILE("M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 12v6 M9 15l3-3 3 3"),
-        SPARKLES("M12 3v3 M12 18v3 M3 12h3 M18 12h3 M5.6 5.6l2.1 2.1 M16.3 16.3l2.1 2.1 M5.6 18.4l2.1-2.1 M16.3 7.7l2.1-2.1");
+        SPARKLES("M12 3v3 M12 18v3 M3 12h3 M18 12h3 M5.6 5.6l2.1 2.1 M16.3 16.3l2.1 2.1 M5.6 18.4l2.1-2.1 M16.3 7.7l2.1-2.1"),
+        PLAY("M5 3l14 9-14 9V3z"),
+        PAUSE("M6 4h4v16H6z M14 4h4v16h-4z"),
+        STOP("M6 6h12v12H6z");
 
         private final String svgContent;
 

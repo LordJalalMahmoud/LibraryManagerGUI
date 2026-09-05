@@ -725,7 +725,8 @@ public class DashboardController {
                         book -> mainController.openBookFormDialog(book),
                         (comp, book) -> confirmAndDelete(book),
                         book -> quickAdvance(book, 10),
-                        this::toggleFavorite
+                        this::toggleFavorite,
+                        book -> mainController.openActiveReadingSessionDialog(book)
                 );
                 currentlyReadingSection.getChildren().add(card);
             }
@@ -755,7 +756,8 @@ public class DashboardController {
                     book -> mainController.openBookFormDialog(book),
                     (comp, book) -> confirmAndDelete(book),
                     book -> quickAdvance(book, 10),
-                    this::toggleFavorite
+                    this::toggleFavorite,
+                    book -> mainController.openActiveReadingSessionDialog(book)
             );
             recentBooksSection.getChildren().add(card);
         }
