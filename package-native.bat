@@ -7,7 +7,13 @@ REM ============================================================================
 setlocal enabledelayedexpansion
 
 set APP_NAME=LibraryManager
-set APP_VERSION=1.1.0
+if "%APP_VERSION%"=="" (
+    for /f "tokens=2 delims=<>" %%a in ('findstr "<version>" pom.xml 2^>nul') do (
+        if "!APP_VERSION!"=="" set APP_VERSION=%%a
+    )
+)
+if "%APP_VERSION%"=="" set APP_VERSION=1.2.0
+
 set APP_DESCRIPTION=Modern Personal Library Management Desktop Application
 set APP_VENDOR=LibraryManager
 set MAIN_CLASS=com.librarymanager.Launcher
@@ -19,7 +25,7 @@ set INPUT_DIR=target\package-input
 set MODULES=java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
 
 echo ======================================================
-echo   LibraryManager - Windows Native Desktop Packaging
+echo   LibraryManager v%APP_VERSION% - Windows Native Packaging
 echo ======================================================
 
 where jpackage >nul 2>nul
@@ -29,10 +35,19 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/3] Building executable Fat JAR...
-call mvn clean package -DskipTests=true -q
-if %errorlevel% neq 0 (
-    echo [ERROR] Maven build failed.
-    exit /b 1
+if not exist "target\%MAIN_JAR%" (
+    call mvn clean package -DskipTests=true -q
+    if %errorlevel% neq 0 (
+        echo [ERROR] Maven build failed.
+        exit /b 1
+    )
+)
+
+if not exist "target\%MAIN_JAR%" (
+    for %%f in (target\library-manager-*.jar) do (
+        echo %%~nxf | findstr /v "original" >nul
+        if !errorlevel! equ 0 set MAIN_JAR=%%~nxf
+    )
 )
 
 echo [2/3] Preparing staging directories...

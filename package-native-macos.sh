@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 APP_NAME="LibraryManager"
-APP_VERSION="1.1.0"
+APP_VERSION="${APP_VERSION:-$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')}"
 APP_DESCRIPTION="Modern Personal Library Management Desktop Application"
 APP_VENDOR="LibraryManager"
 BUNDLE_ID="com.librarymanager.app"
@@ -31,7 +31,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${BLUE}  LibraryManager - macOS Native Desktop Packaging     ${NC}"
+echo -e "${BLUE}  LibraryManager v${APP_VERSION} - macOS Native Packaging     ${NC}"
 echo -e "${BLUE}======================================================${NC}"
 
 if ! command -v jpackage &> /dev/null; then
@@ -44,6 +44,17 @@ MODE="${1:-all}"
 if [ ! -f "target/${MAIN_JAR}" ] || [ "$2" == "--rebuild" ]; then
     echo -e "${YELLOW}Step 1: Building executable Fat JAR...${NC}"
     mvn clean package -DskipTests=true -q
+fi
+
+if [ ! -f "target/${MAIN_JAR}" ]; then
+    FOUND_JAR=$(ls target/library-manager-*.jar 2>/dev/null | grep -v 'original' | head -n 1)
+    if [ -n "$FOUND_JAR" ] && [ -f "$FOUND_JAR" ]; then
+        MAIN_JAR=$(basename "$FOUND_JAR")
+        echo -e "${GREEN}✓ Auto-detected JAR: target/${MAIN_JAR}${NC}"
+    else
+        echo -e "${RED}Error: target/${MAIN_JAR} was not found after build.${NC}"
+        exit 1
+    fi
 else
     echo -e "${GREEN}✓ Using existing JAR: target/${MAIN_JAR}${NC}"
 fi

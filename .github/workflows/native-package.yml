@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release Tag Version (e.g. v1.1.0)'
+        description: 'Release Tag Version (e.g. v1.2.0)'
         required: false
-        default: 'v1.1.0'
+        default: 'v1.2.0'
       is_draft:
         description: 'Create as Draft Release?'
         type: boolean
@@ -76,7 +76,7 @@ jobs:
       - name: Build Native Windows Packages (jpackage)
         shell: bash
         run: |
-          APP_VERSION="1.1.0"
+          APP_VERSION=$(grep -m1 '<version>' pom.xml | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
           mkdir -p target/package-input target/dist
           JAR_FILE=$(ls target/library-manager-*.jar | grep -v 'original' | head -n 1)
           JAR_NAME=$(basename "$JAR_FILE")
@@ -192,8 +192,8 @@ jobs:
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.1.0' }}
-          name: "LibraryManager ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.1.0' }}"
+          tag_name: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.2.0' }}
+          name: "LibraryManager ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.2.0' }}"
           body_path: RELEASE_NOTES.md
           draft: ${{ inputs.is_draft || false }}
           prerelease: ${{ inputs.is_prerelease || false }}
