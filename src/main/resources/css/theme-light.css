@@ -1,0 +1,31 @@
+/* Light Theme Palette */
+.root {
+    -bg-main: #f8fafc;
+    -bg-sidebar: #f1f5f9;
+    -bg-card: #ffffff;
+    -bg-hover: #e2e8f0;
+    -bg-progress-track: #e2e8f0;
+
+    -text-main: #0f172a;
+    -text-muted: #64748b;
+
+    -border-subtle: #e2e8f0;
+    -border-hover: #cbd5e1;
+
+    -accent-primary: #4f46e5;
+    -accent-hover: #4338ca;
+    -accent-subtle: rgba(79, 70, 229, 0.1);
+    -accent-glow: rgba(79, 70, 229, 0.25);
+
+    -badge-notstarted-bg: #f1f5f9;
+    -badge-notstarted-text: #475569;
+
+    -badge-reading-bg: rgba(59, 130, 246, 0.15);
+    -badge-reading-text: #2563eb;
+
+    -badge-completed-bg: rgba(16, 185, 129, 0.15);
+    -badge-completed-text: #059669;
+
+    -scrollbar-thumb: #cbd5e1;
+    -scrollbar-thumb-hover: #94a3b8;
+}

@@ -1,0 +1,31 @@
+/* Dark Theme Palette */
+.root {
+    -bg-main: #0b0f17;
+    -bg-sidebar: #0f172a;
+    -bg-card: #141e33;
+    -bg-hover: #1e293b;
+    -bg-progress-track: #1e293b;
+
+    -text-main: #f8fafc;
+    -text-muted: #94a3b8;
+
+    -border-subtle: #1e293b;
+    -border-hover: #334155;
+
+    -accent-primary: #6366f1;
+    -accent-hover: #4f46e5;
+    -accent-subtle: rgba(99, 102, 241, 0.15);
+    -accent-glow: rgba(99, 102, 241, 0.35);
+
+    -badge-notstarted-bg: #1e293b;
+    -badge-notstarted-text: #94a3b8;
+
+    -badge-reading-bg: rgba(59, 130, 246, 0.2);
+    -badge-reading-text: #60a5fa;
+
+    -badge-completed-bg: rgba(16, 185, 129, 0.2);
+    -badge-completed-text: #34d399;
+
+    -scrollbar-thumb: #334155;
+    -scrollbar-thumb-hover: #475569;
+}

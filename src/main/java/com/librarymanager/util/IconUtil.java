@@ -1,0 +1,58 @@
+package com.librarymanager.util;
+
+import javafx.scene.shape.SVGPath;
+
+/**
+ * Provides scalable vector SVG icons styled to match the active theme.
+ */
+public class IconUtil {
+
+    public enum IconType {
+        DASHBOARD("M4 4h7v7H4z M14 4h6v11h-6z M4 14h7v6H4z M14 18h6v2h-6z"),
+        LIBRARY("M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"),
+        READING("M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"),
+        COMPLETED("M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3"),
+        NOT_STARTED("M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 5v5l3 3"),
+        STATS("M18 20V10 M12 20V4 M6 20v-6"),
+        SETTINGS("M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"),
+        PLUS("M12 5v14 M5 12h14"),
+        EDIT("M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"),
+        TRASH("M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2 M10 11v6 M14 11v6"),
+        SEARCH("M21 21l-4.35-4.35 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"),
+        MOON("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"),
+        SUN("M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"),
+        BACK("M19 12H5 M12 19l-7-7 7-7"),
+        DATABASE("M21 5c0 1.66-4 3-9 3s-9-1.34-9-3 4-3 9-3 9 1.34 9 3z M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5 M3 12c0 1.66 4 3 9 3s9-1.34 9-3"),
+        BACKUP("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"),
+        RESTORE("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12"),
+        RESET("M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15"),
+        INFO("M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z M12 16v-4 M12 8h.01"),
+        CLOSE("M18 6L6 18 M6 6l12 12"),
+        CHECK("M20 6L9 17l-5-5"),
+        PAGES("M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8");
+
+        private final String svgContent;
+
+        IconType(String svgContent) {
+            this.svgContent = svgContent;
+        }
+
+        public String getSvgContent() {
+            return svgContent;
+        }
+    }
+
+    public static SVGPath createIcon(IconType type) {
+        return createIcon(type, 16);
+    }
+
+    public static SVGPath createIcon(IconType type, double size) {
+        SVGPath path = new SVGPath();
+        path.setContent(type.getSvgContent());
+        path.getStyleClass().add("app-icon");
+        double scale = size / 24.0;
+        path.setScaleX(scale);
+        path.setScaleY(scale);
+        return path;
+    }
+}
