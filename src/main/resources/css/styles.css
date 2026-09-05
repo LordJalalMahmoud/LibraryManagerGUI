@@ -1440,6 +1440,155 @@
     -fx-border-width: 0 0 0 3px;
 }
 
+/* ==========================================================================
+   Interactive Product Tour (v1.8)
+   ========================================================================== */
+
+.tour-overlay {
+    -fx-background-color: rgba(10, 15, 29, 0.78);
+    -fx-alignment: CENTER;
+}
+
+.tour-card {
+    -fx-background-color: -bg-card;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-padding: 24px 28px 24px 28px;
+    -fx-min-width: 480px;
+    -fx-max-width: 540px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 32, 0, 0, 12);
+}
+
+.tour-header {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 10px;
+}
+
+.tour-category-pill {
+    -fx-background-color: -accent-subtle;
+    -fx-text-fill: -accent-primary;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-border-color: -accent-glow;
+    -fx-border-width: 1px;
+}
+
+.tour-step-counter {
+    -fx-background-color: -badge-notstarted-bg;
+    -fx-text-fill: -text-subtle;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+}
+
+.tour-close-btn {
+    -fx-cursor: hand;
+    -fx-padding: 6px;
+    -fx-background-radius: 8px;
+}
+
+.tour-progress-bar {
+    -fx-pref-height: 4px;
+    -fx-min-height: 4px;
+    -fx-max-height: 4px;
+}
+
+.tour-progress-bar > .track {
+    -fx-background-color: -bg-progress-track;
+    -fx-background-radius: 4px;
+}
+
+.tour-progress-bar > .bar {
+    -fx-background-color: -accent-gradient;
+    -fx-background-radius: 4px;
+}
+
+.tour-body {
+    -fx-alignment: TOP_LEFT;
+    -fx-spacing: 18px;
+}
+
+.tour-icon-box {
+    -fx-background-color: -accent-subtle;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
+    -fx-border-color: -accent-glow;
+    -fx-border-width: 1px;
+    -fx-min-width: 54px;
+    -fx-max-width: 54px;
+    -fx-min-height: 54px;
+    -fx-max-height: 54px;
+    -fx-alignment: CENTER;
+}
+
+.tour-icon-box .app-icon {
+    -fx-fill: -accent-primary;
+}
+
+.tour-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -text-main;
+}
+
+.tour-shortcut-badge {
+    -fx-background-color: -bg-input;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 2px 8px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-font-family: monospace;
+    -fx-text-fill: -accent-primary;
+}
+
+.tour-desc {
+    -fx-font-size: 13px;
+    -fx-text-fill: -text-secondary;
+    -fx-line-spacing: 4px;
+}
+
+.tour-dots-box {
+    -fx-alignment: CENTER;
+    -fx-spacing: 6px;
+    -fx-padding: 4px 0;
+}
+
+.tour-dot {
+    -fx-pref-width: 6px;
+    -fx-pref-height: 6px;
+    -fx-min-width: 6px;
+    -fx-min-height: 6px;
+    -fx-background-radius: 3px;
+    -fx-background-color: -border-subtle;
+    -fx-cursor: hand;
+}
+
+.tour-dot:hover {
+    -fx-background-color: -text-subtle;
+}
+
+.tour-dot-active {
+    -fx-pref-width: 20px;
+    -fx-background-radius: 4px;
+    -fx-background-color: -accent-primary;
+}
+
+.tour-footer {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 12px;
+}
+
+
 
 
 

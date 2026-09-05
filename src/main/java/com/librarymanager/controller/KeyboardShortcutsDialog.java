@@ -95,6 +95,7 @@ public class KeyboardShortcutsDialog {
 
         // Category 4: System & Accessibility
         content.getChildren().add(createCategory(I18n.get("shortcuts.category.system"), List.of(
+                new ShortcutEntry(List.of("Ctrl", "T"), I18n.get("shortcuts.desc.guided_tour")),
                 new ShortcutEntry(List.of("Ctrl", "D"), I18n.get("shortcuts.desc.toggle_theme")),
                 new ShortcutEntry(List.of("F1"), I18n.get("shortcuts.desc.shortcuts_dialog"))
         )));

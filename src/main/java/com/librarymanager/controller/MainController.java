@@ -1,5 +1,6 @@
 package com.librarymanager.controller;
 
+import com.librarymanager.component.InteractiveTourOverlay;
 import com.librarymanager.component.ToastNotification;
 import com.librarymanager.model.Book;
 import com.librarymanager.model.ReadingStatus;
@@ -56,9 +57,11 @@ public class MainController extends BorderPane {
     private VBox toastContainer;
     private Label pageTitleLabel;
     private Label pageSubtitleLabel;
+    private Button tourBtn;
     private Button themeToggleBtn;
     private Button addBookBtn;
     private SVGPath themeIcon;
+    private InteractiveTourOverlay tourOverlay;
 
     // Nav elements
     private final List<Button> navButtons = new ArrayList<>();
@@ -103,7 +106,6 @@ public class MainController extends BorderPane {
 
         // 1. Sidebar
         sidebar = buildSidebar();
-        setLeft(sidebar);
 
         // 2. Main content area with header and view container
         VBox centerLayout = new VBox();
@@ -132,7 +134,17 @@ public class MainController extends BorderPane {
         contentWrapper.getChildren().addAll(viewContainer, dragOverlay, toastContainer);
         centerLayout.getChildren().add(contentWrapper);
 
-        setCenter(centerLayout);
+        // Shell Layout with overlay support
+        BorderPane innerLayout = new BorderPane();
+        innerLayout.setLeft(sidebar);
+        innerLayout.setCenter(centerLayout);
+
+        tourOverlay = new InteractiveTourOverlay(this, bookService);
+        tourOverlay.setVisible(false);
+        tourOverlay.setManaged(false);
+
+        StackPane rootStack = new StackPane(innerLayout, tourOverlay);
+        setCenter(rootStack);
 
         setupDragAndDrop();
         setupShortcuts();
@@ -260,6 +272,15 @@ public class MainController extends BorderPane {
         titleBox.getChildren().addAll(pageTitleLabel, pageSubtitleLabel);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
 
+        // Guided Product Tour Button
+        tourBtn = new Button();
+        tourBtn.getStyleClass().addAll("btn", "btn-icon");
+        tourBtn.setTooltip(new Tooltip(I18n.get("tour.btn.tooltip")));
+        SVGPath tourIcon = IconUtil.createIcon(IconUtil.IconType.SPARKLES, 16);
+        tourIcon.setStyle("-fx-fill: -accent-primary;");
+        tourBtn.setGraphic(tourIcon);
+        tourBtn.setOnAction(e -> startInteractiveTour());
+
         // Theme Toggle Button
         themeToggleBtn = new Button();
         themeToggleBtn.getStyleClass().addAll("btn", "btn-icon");
@@ -279,7 +300,7 @@ public class MainController extends BorderPane {
         addBookBtn.setGraphicTextGap(8);
         addBookBtn.setOnAction(e -> openBookFormDialog(null));
 
-        bar.getChildren().addAll(titleBox, themeToggleBtn, addBookBtn);
+        bar.getChildren().addAll(titleBox, tourBtn, themeToggleBtn, addBookBtn);
         return bar;
     }
 
@@ -325,6 +346,12 @@ public class MainController extends BorderPane {
             // Update Header
             addBookBtn.setText(I18n.get("header.add_book"));
             themeToggleBtn.setTooltip(new Tooltip(I18n.get("header.theme_toggle")));
+            if (tourBtn != null) {
+                tourBtn.setTooltip(new Tooltip(I18n.get("tour.btn.tooltip")));
+            }
+            if (tourOverlay != null) {
+                tourOverlay.refreshTexts();
+            }
 
             // Toast alignment
             toastContainer.setAlignment(I18n.isRTL() ? Pos.TOP_LEFT : Pos.TOP_RIGHT);
@@ -643,6 +670,7 @@ public class MainController extends BorderPane {
         });
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.R, KeyCombination.SHORTCUT_DOWN), () -> openActiveReadingSessionDialog(null));
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN), this::triggerQuickBackup);
+        scene.getAccelerators().put(new KeyCodeCombination(KeyCode.T, KeyCombination.SHORTCUT_DOWN), this::startInteractiveTour);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F1), this::openShortcutsDialog);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.SLASH, KeyCombination.SHORTCUT_DOWN), this::openShortcutsDialog);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN), () -> {
@@ -672,6 +700,16 @@ public class MainController extends BorderPane {
 
     public void openShortcutsDialog() {
         new KeyboardShortcutsDialog(settingsService).show(primaryStage);
+    }
+
+    public void startInteractiveTour() {
+        if (tourOverlay != null) {
+            tourOverlay.startTour();
+        }
+    }
+
+    public InteractiveTourOverlay getTourOverlay() {
+        return tourOverlay;
     }
 
     public void navigateToLibraryWithSearchFocus() {
