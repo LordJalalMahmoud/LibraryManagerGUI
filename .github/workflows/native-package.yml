@@ -1,10 +1,26 @@
-name: Native Packaging
+name: Native Release Packaging
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag Version (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+      is_draft:
+        description: 'Create as Draft Release?'
+        type: boolean
+        default: false
+      is_prerelease:
+        description: 'Create as Pre-release?'
+        type: boolean
+        default: false
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   package-linux:
@@ -31,10 +47,10 @@ jobs:
       - name: Build Native Linux Packages
         run: ./package-native.sh all
 
-      - name: Upload Linux Packages
+      - name: Upload Linux Packages Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LibraryManager-Linux-Packages
+          name: linux-packages
           path: |
             target/dist/*.deb
             target/dist/*.tar.gz
@@ -62,6 +78,8 @@ jobs:
         run: |
           mkdir -p target/package-input target/dist
           cp target/library-manager-1.0.0.jar target/package-input/
+          
+          # Standalone Image
           jpackage \
             --type app-image \
             --name LibraryManager \
@@ -75,6 +93,7 @@ jobs:
             --java-options "-Dfile.encoding=UTF-8" \
             --add-modules java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
           
+          # Native MSI Installer
           jpackage \
             --type msi \
             --name LibraryManager \
@@ -91,13 +110,21 @@ jobs:
             --java-options "-Dfile.encoding=UTF-8" \
             --add-modules java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
 
+          # Rename MSI if needed
+          if [ -f "target/dist/LibraryManager-1.0.0.msi" ]; then
+            cp "target/dist/LibraryManager-1.0.0.msi" "target/dist/LibraryManager-1.0.0-windows-x64.msi"
+          elif [ -f "target/dist/LibraryManager.msi" ]; then
+            cp "target/dist/LibraryManager.msi" "target/dist/LibraryManager-1.0.0-windows-x64.msi"
+          fi
+
+          # Compress portable directory
           cd target/dist
           7z a LibraryManager-1.0.0-windows-x64.zip LibraryManager
 
-      - name: Upload Windows Packages
+      - name: Upload Windows Packages Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LibraryManager-Windows-Packages
+          name: windows-packages
           path: |
             target/dist/*.msi
             target/dist/*.zip
@@ -126,12 +153,48 @@ jobs:
       - name: Build Native macOS Packages
         run: ./package-native-macos.sh all
 
-      - name: Upload macOS Packages
+      - name: Upload macOS Packages Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LibraryManager-macOS-Packages
+          name: macos-packages
           path: |
             target/dist/*.dmg
             target/dist/*.pkg
             target/dist/*.tar.gz
 
+  publish-release:
+    name: Publish Production GitHub Release
+    needs: [package-linux, package-windows, package-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Create release staging directory
+        run: mkdir -p release-assets
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA-256 Checksums
+        working-directory: release-assets
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          echo "=== Release Assets Ready for Publishing ==="
+          ls -lh
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}
+          name: "LibraryManager ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}"
+          body_path: RELEASE_NOTES.md
+          draft: ${{ inputs.is_draft || false }}
+          prerelease: ${{ inputs.is_prerelease || false }}
+          generate_release_notes: false
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

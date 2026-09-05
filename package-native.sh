@@ -109,6 +109,7 @@ build_deb() {
           --add-modules "$MODULES"
 
         echo -e "${GREEN}✓ Native Debian package created: $(ls ${DEST_DIR}/${DEB_NAME}_*.deb)${NC}"
+        cp -f ${DEST_DIR}/${DEB_NAME}_*.deb "${DEST_DIR}/${APP_NAME}-${APP_VERSION}-linux-amd64.deb" 2>/dev/null || true
     else
         echo -e "${YELLOW}Skipping .deb generation (dpkg-deb not installed on this system).${NC}"
     fi
