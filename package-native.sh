@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 
 APP_NAME="LibraryManager"
 DEB_NAME="library-manager"
-APP_VERSION="1.0.0"
+APP_VERSION="1.1.0"
 APP_DESCRIPTION="Modern Personal Library Management Desktop Application"
 APP_VENDOR="LibraryManager"
 MAIN_CLASS="com.librarymanager.Launcher"

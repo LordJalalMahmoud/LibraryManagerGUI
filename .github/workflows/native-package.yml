@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release Tag Version (e.g. v1.0.0)'
+        description: 'Release Tag Version (e.g. v1.1.0)'
         required: false
-        default: 'v1.0.0'
+        default: 'v1.1.0'
       is_draft:
         description: 'Create as Draft Release?'
         type: boolean
@@ -76,18 +76,21 @@ jobs:
       - name: Build Native Windows Packages (jpackage)
         shell: bash
         run: |
+          APP_VERSION="1.1.0"
           mkdir -p target/package-input target/dist
-          cp target/library-manager-1.0.0.jar target/package-input/
+          JAR_FILE=$(ls target/library-manager-*.jar | grep -v 'original' | head -n 1)
+          JAR_NAME=$(basename "$JAR_FILE")
+          cp "$JAR_FILE" target/package-input/
           
           # Standalone Image
           jpackage \
             --type app-image \
             --name LibraryManager \
-            --app-version 1.0.0 \
+            --app-version "$APP_VERSION" \
             --vendor LibraryManager \
             --description "Modern Personal Library Management Desktop Application" \
             --input target/package-input \
-            --main-jar library-manager-1.0.0.jar \
+            --main-jar "$JAR_NAME" \
             --main-class com.librarymanager.Launcher \
             --dest target/dist \
             --java-options "-Dfile.encoding=UTF-8" \
@@ -97,11 +100,11 @@ jobs:
           jpackage \
             --type msi \
             --name LibraryManager \
-            --app-version 1.0.0 \
+            --app-version "$APP_VERSION" \
             --vendor LibraryManager \
             --description "Modern Personal Library Management Desktop Application" \
             --input target/package-input \
-            --main-jar library-manager-1.0.0.jar \
+            --main-jar "$JAR_NAME" \
             --main-class com.librarymanager.Launcher \
             --dest target/dist \
             --win-dir-chooser \
@@ -111,15 +114,15 @@ jobs:
             --add-modules java.base,java.desktop,java.sql,java.scripting,java.logging,java.management,java.naming,jdk.unsupported,jdk.jfr
 
           # Rename MSI if needed
-          if [ -f "target/dist/LibraryManager-1.0.0.msi" ]; then
-            cp "target/dist/LibraryManager-1.0.0.msi" "target/dist/LibraryManager-1.0.0-windows-x64.msi"
+          if [ -f "target/dist/LibraryManager-${APP_VERSION}.msi" ]; then
+            cp "target/dist/LibraryManager-${APP_VERSION}.msi" "target/dist/LibraryManager-${APP_VERSION}-windows-x64.msi"
           elif [ -f "target/dist/LibraryManager.msi" ]; then
-            cp "target/dist/LibraryManager.msi" "target/dist/LibraryManager-1.0.0-windows-x64.msi"
+            cp "target/dist/LibraryManager.msi" "target/dist/LibraryManager-${APP_VERSION}-windows-x64.msi"
           fi
 
           # Compress portable directory
           cd target/dist
-          7z a LibraryManager-1.0.0-windows-x64.zip LibraryManager
+          7z a LibraryManager-${APP_VERSION}-windows-x64.zip LibraryManager
 
       - name: Upload Windows Packages Artifact
         uses: actions/upload-artifact@v4
@@ -189,8 +192,8 @@ jobs:
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}
-          name: "LibraryManager ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}"
+          tag_name: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.1.0' }}
+          name: "LibraryManager ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.1.0' }}"
           body_path: RELEASE_NOTES.md
           draft: ${{ inputs.is_draft || false }}
           prerelease: ${{ inputs.is_prerelease || false }}

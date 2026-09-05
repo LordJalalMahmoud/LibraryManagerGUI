@@ -7,7 +7,7 @@ REM ============================================================================
 setlocal enabledelayedexpansion
 
 set APP_NAME=LibraryManager
-set APP_VERSION=1.0.0
+set APP_VERSION=1.1.0
 set APP_DESCRIPTION=Modern Personal Library Management Desktop Application
 set APP_VENDOR=LibraryManager
 set MAIN_CLASS=com.librarymanager.Launcher

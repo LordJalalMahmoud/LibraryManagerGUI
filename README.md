@@ -38,10 +38,10 @@ Download production-ready native desktop packages that run **without requiring J
 
 | OS | Format | Direct Download | Description |
 | :--- | :--- | :--- | :--- |
-| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.0.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
-| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.0.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
-| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.0.0.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
-| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.0.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
+| 🐧 **Linux** | Debian `.deb` Package | [`library-manager_1.1.0_amd64.deb`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Installs into `/opt/library-manager` with desktop launcher |
+| 🐧 **Linux** | Standalone Tarball | [`library-manager-1.1.0-linux-x64.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Portable directory, run `./bin/LibraryManager` directly |
+| 🪟 **Windows** | Windows MSI Installer | [`LibraryManager-1.1.0-windows-x64.msi`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Complete Windows installer with Start Menu & desktop shortcuts |
+| 🍏 **macOS** | Standalone `.app` Archive | [`LibraryManager-1.1.0-macos.tar.gz`](https://github.com/LordJalalMahmoud/LibraryManagerGUI/releases/latest) | Standalone `LibraryManager.app` bundle |
 
 ---
 
@@ -173,9 +173,9 @@ Configured in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). On every `
 
 ### 2. Multi-Platform Release Pipeline (`native-package.yml`)
 Configured in [`.github/workflows/native-package.yml`](.github/workflows/native-package.yml). When a release tag (`v*`) is pushed:
-- **Linux (`ubuntu-latest`)**: Builds `library-manager_1.0.0_amd64.deb` and portable `.tar.gz` via `jpackage`.
-- **Windows (`windows-latest`)**: Builds `LibraryManager-1.0.0.msi` installer and portable `.zip`.
-- **macOS (`macos-latest`)**: Builds `LibraryManager-1.0.0.dmg`, `.pkg`, and `LibraryManager.app`.
+- **Linux (`ubuntu-latest`)**: Builds `library-manager_1.1.0_amd64.deb` and portable `.tar.gz` via `jpackage`.
+- **Windows (`windows-latest`)**: Builds `LibraryManager-1.1.0-windows-x64.msi` installer and portable `.zip`.
+- **macOS (`macos-latest`)**: Builds `LibraryManager-1.1.0.dmg`, `.pkg`, and `LibraryManager.app`.
 - **Security Checksums**: Computes `SHA256SUMS.txt` for all compiled binaries.
 - **Production Publishing**: Automatically publishes the official release with all binaries attached.
 
@@ -201,7 +201,7 @@ mvn test
 ```bash
 mvn clean package
 # Produces standalone executable in target/
-java -jar target/library-manager-1.0.0.jar
+java -jar target/library-manager-1.1.0.jar
 ```
 
 ### 4. Build Native Packages Locally (jpackage)

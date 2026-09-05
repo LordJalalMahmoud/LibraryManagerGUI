@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 APP_NAME="LibraryManager"
-APP_VERSION="1.0.0"
+APP_VERSION="1.1.0"
 APP_DESCRIPTION="Modern Personal Library Management Desktop Application"
 APP_VENDOR="LibraryManager"
 BUNDLE_ID="com.librarymanager.app"
